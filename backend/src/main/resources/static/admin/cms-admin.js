@@ -53,7 +53,15 @@
     items.forEach(item=>{
       const row=el('article','cms-record');const intro=el('div');intro.append(el('h2','',item.name),el('p','',`${item.active?'Published':'Draft / inactive'} · Order ${item.displayOrder} · ${item.slug}${item.featured?' · Featured':''}${item.concept&&kind==='portfolio'?' · Demo/concept':''}`));
       const actions=el('div','cms-row-actions');
-      actions.append(button('Edit',()=>itemForm(kind,item,message)),button(item.active?'Deactivate':'Publish',async event=>{
+      actions.append(button('Edit',async event=>{
+        const target=event.currentTarget;target.disabled=true;const token=++generation;
+        status(message,'Loading saved record…');
+        try{
+          const saved=await apiRequest(`/api/admin/cms/${kind}/${item.id}`);
+          if(token===generation)itemForm(kind,saved,message);
+        }catch(error){if(token===generation)status(message,error.message,'error');}
+        finally{target.disabled=false;}
+      }),button(item.active?'Deactivate':'Publish',async event=>{
         const target=event.currentTarget;target.disabled=true;
         try{await apiRequest(`/api/admin/cms/${kind}/${item.id}`,{method:'PUT',body:JSON.stringify({...item,active:!item.active})});await openModule(kind);status(panel.querySelector('.form-message'),'Publication status updated.','success');summary();}catch(e){status(message,e.message,'error');target.disabled=false;}
       }),button('Delete',async event=>{
@@ -74,7 +82,12 @@
     input.id=title.htmlFor;input.name=name;input.required=required;input.value=Array.isArray(value)?value.join('\n'):String(value??'');
     input.dataset.type=type;const error=el('span','cms-field-error');error.id=`${input.id}-error`;input.setAttribute('aria-describedby',error.id);input.addEventListener('input',()=>{error.textContent='';input.removeAttribute('aria-invalid');});
     wrap.append(title,input,error);if(type==='list')wrap.append(el('small','','One item per line (maximum 20).'));
-    if(type==='image')wrap.append(el('small','','Use assets/...png/jpg/webp/gif/avif or an HTTPS image URL. No uploads in this version.'));
+    if(type==='image')wrap.append(el('small','','Use a served local image path, such as /assets/images/project.png or /images/project.jpg, or an HTTP/HTTPS image URL. No uploads in this version.'));
+    if(name==='slug'){
+      input.pattern='[a-z0-9]+(?:-[a-z0-9]+)*';
+      wrap.append(el('small','','Internal identifier, such as my-project. It stays fixed after creation. Enter the website address in Project URL.'));
+    }
+    if(name==='projectUrl')wrap.append(el('small','','Use www.abc.com, https://www.abc.com, or an HTTP URL. Addresses without a scheme are saved with https://.'));
     form.append(wrap);return input;
   }
   function formFeedback(form,message,error){
@@ -86,7 +99,7 @@
   function itemForm(kind,item,message){
     panel.querySelectorAll('.cms-toolbar,.cms-records,.cms-empty,.cms-editor').forEach(n=>n.remove());message.textContent='';
     const form=el('form','cms-editor');form.append(el('h2','',`${item?'Edit':'Add'} ${kind==='services'?'service':'project'}`),el('p','','Fields marked * are required. Content is plain text, not HTML.'));
-    const definitions=[{name:'name',label:kind==='services'?'Service name':'Project title',max:120,required:true},{name:'slug',label:'Stable URL slug',max:120,required:true},{name:'shortDescription',label:'Short description',type:'textarea',max:600,required:true},{name:'description',label:'Full description',type:'textarea',max:12000,required:true},{name:'icon',label:'Icon',type:'icon',required:true},{name:'imageUrl',label:'Image URL/path (optional)',type:'image',max:2048},{name:'displayOrder',label:'Display order',type:'number',required:true},{name:'active',label:kind==='services'?'Active / visible':'Published',type:'boolean',required:true}];
+    const definitions=[{name:'name',label:kind==='services'?'Service name':'Project title',max:120,required:true},{name:'slug',label:'Stable internal slug',max:120,required:true},{name:'shortDescription',label:'Short description',type:'textarea',max:600,required:true},{name:'description',label:'Full description',type:'textarea',max:12000,required:true},{name:'icon',label:'Icon',type:'icon',required:true},{name:'imageUrl',label:'Image URL/path (optional)',type:'image',max:2048},{name:'displayOrder',label:'Display order',type:'number',required:true},{name:'active',label:kind==='services'?'Active / visible':'Published',type:'boolean',required:true}];
     if(kind==='services')definitions.push({name:'capabilities',label:'Key capabilities',type:'list',max:6000},{name:'benefits',label:'Business benefits',type:'list',max:6000},{name:'useCases',label:'Typical use cases',type:'textarea',max:2000});
     else definitions.push({name:'category',label:'Category',max:120},{name:'technologies',label:'Technologies',type:'list',max:2400},{name:'projectUrl',label:'Project URL (optional)',type:'url',max:2048},{name:'featured',label:'Featured on homepage',type:'boolean'},{name:'concept',label:'Clearly label as demo / concept',type:'boolean'});
     definitions.forEach(def=>field(form,def,item?.[def.name]??({displayOrder:10,active:false,featured:false,concept:true,icon:'window'}[def.name]??'')));

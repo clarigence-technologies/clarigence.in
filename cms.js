@@ -19,13 +19,21 @@
     if(text!=null)element.textContent=text;
     return element;
   };
-  const safeUrl=(value,image=false) => {
-    if(!value || /[\\<>\s]/.test(value))return '';
+  const safeUrl=(value,image=false,project=false) => {
+    if(!value || /[\\<>"\s\u0000-\u001f\u007f]/.test(value))return '';
+    if(project && /^(?:www\.)?(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z]{2,63}(?::[0-9]{1,5})?(?:[/?#].*)?$/i.test(value) && !/^[a-z0-9_-]+\.html(?:[?#].*)?$/i.test(value))value=`https://${value}`;
     try {
-      const url=new URL(value,location.href);
+      const absolute=/^[a-z][a-z0-9+.-]*:/i.test(value);
+      if(value.startsWith('//'))return '';
+      const url=new URL(value,image?`${location.origin}/`:location.href);
       if(url.username || url.password)return '';
-      if(url.origin!==location.origin && url.protocol!=='https:')return '';
-      if(image && !/\.(png|jpe?g|webp|gif|avif)$/i.test(url.pathname))return '';
+      if(!['http:','https:'].includes(url.protocol))return '';
+      if(url.origin!==location.origin && url.protocol!=='https:' && !image && !project)return '';
+      if(image){
+        if(url.hash)return '';
+        if(absolute){if(!/(?:\.(png|jpe?g|webp|gif|avif)|\/[^/.]*|^)$/i.test(url.pathname))return '';}
+        else if(value.includes('..') || value.includes('%') || !/^\/?[a-z0-9_./-]+\.(png|jpe?g|webp|gif|avif)$/i.test(value.split('?')[0]))return '';
+      }
       if(!image && url.origin===location.origin){
         const pages={'/index.html':'/','/index':'/','/home':'/','/about.html':'/about','/services.html':'/services','/solutions.html':'/solutions','/portfolio.html':'/portfolio','/contact.html':'/contact'};
         url.pathname=pages[url.pathname]||url.pathname;
@@ -149,7 +157,8 @@
           if(project.technologies?.length)copy.append(node('p','technology',project.technologies.join(' · ')));
           const details=node('details');details.append(node('summary','',project.concept?'Explore the concept':'Project details'),node('p','cms-copy',project.description));
           if(project.concept)details.append(node('p','','An illustrative demo or concept, not a client case study.'));
-          if(project.projectUrl){const url=link('View project ↗',project.projectUrl);url.target='_blank';url.rel='noopener noreferrer';url.setAttribute('aria-label',`View ${project.title} (opens in a new tab)`);details.append(url);}
+          const projectHref=safeUrl(project.projectUrl,false,true);
+          if(projectHref){const url=node('a','text-link','View project ↗');url.href=projectHref;url.target='_blank';url.rel='noopener noreferrer';url.setAttribute('aria-label',`View ${project.title} (opens in a new tab)`);details.append(url);}
           copy.append(details);article.append(art,copy);container.append(article);
         });reveal(container);
       }

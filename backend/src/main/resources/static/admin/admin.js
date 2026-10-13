@@ -52,7 +52,7 @@ async function apiRequest(path, options = {}) {
     headers.set('X-XSRF-TOKEN', csrfToken);
   }
 
-  const response = await fetch(path, { ...options, method, headers, credentials: 'same-origin' });
+  const response = await fetch(path, { cache: 'no-store', ...options, method, headers, credentials: 'same-origin' });
   if (response.status === 204) return null;
   const payload = await response.json().catch(() => ({}));
   if (response.status === 401 && path !== '/api/admin/auth/login') {

@@ -154,6 +154,74 @@ class CmsIntegrationTest {
         mvc.perform(get("/api/portfolio/internal-verification-concept")).andExpect(status().isNotFound());
         mvc.perform(delete(path).with(csrf())).andExpect(status().isNoContent());assertEquals(0,projects.count());
     }
+    @Test @WithMockUser(roles="ADMIN") void portfolioFieldsRoundTripAndPersistAcrossRequests() throws Exception {
+        Map<String,Object> request=item("portfolio-round-trip",true);
+        request.put("category","Business websites");request.put("projectUrl","www.abc.com/work?view=1#demo");
+        request.put("imageUrl","/images/project.PNG?v=1");request.put("concept",false);
+        Map<String,Object> saved=create("portfolio",request);String path="/api/admin/cms/portfolio/"+saved.get("id");
+        request.put("projectUrl","https://www.abc.com/work?view=1#demo");
+        assertPortfolioFields(request,saved);
+        mvc.perform(get("/api/portfolio/portfolio-round-trip")).andExpect(jsonPath("$.projectUrl").value(request.get("projectUrl"))).andExpect(jsonPath("$.imageUrl").value(request.get("imageUrl")));
+        saved.put("name","Updated project");saved.put("shortDescription","Updated summary");saved.put("description","Updated full description\nWith a second line.");
+        saved.put("icon","cloud");saved.put("category","Updated category");saved.put("technologies",List.of("Spring Boot","JavaScript"));
+        saved.put("imageUrl","https://images.example.test/render?width=800&format=webp");saved.put("projectUrl","https://www.updated.example.test/path?q=1");
+        saved.put("displayOrder",0);saved.put("featured",false);saved.put("concept",true);saved.put("active",false);
+        var updated=mvc.perform(put(path).with(csrf()).contentType(MediaType.APPLICATION_JSON).content(json.writeValueAsString(saved))).andExpect(status().isOk()).andReturn().getResponse();
+        var values=json.readValue(updated.getContentAsString(),new com.fasterxml.jackson.core.type.TypeReference<Map<String,Object>>(){});
+        assertPortfolioFields(saved,values);
+        // SQL timestamp columns store microseconds rather than Instant's nanoseconds.
+        assertTrue(java.time.Duration.between(java.time.Instant.parse((String)saved.get("createdAt")),java.time.Instant.parse((String)values.get("createdAt"))).abs().compareTo(java.time.Duration.ofNanos(1000))<=0);
+        assertEquals(1,values.get("version"));
+        String loaded=mvc.perform(get(path)).andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+        assertPortfolioFields(values,json.readValue(loaded,new com.fasterxml.jackson.core.type.TypeReference<Map<String,Object>>(){}));
+        String listed=mvc.perform(get("/api/admin/cms/portfolio")).andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+        assertPortfolioFields(values,json.readValue(listed,new com.fasterxml.jackson.core.type.TypeReference<List<Map<String,Object>>>(){}).getFirst());
+        var stored=projects.findById(((Number)saved.get("id")).longValue()).orElseThrow();
+        assertEquals(values.get("projectUrl"),stored.getProjectUrl());assertEquals(values.get("imageUrl"),stored.getImageUrl());assertEquals(values.get("technologies"),stored.getTechnologies());
+        mvc.perform(get("/api/portfolio/portfolio-round-trip")).andExpect(status().isNotFound());
+        // Publication changes must retain URLs and every other field.
+        values.put("active",true);values.put("featured",true);
+        mvc.perform(put(path).with(csrf()).contentType(MediaType.APPLICATION_JSON).content(json.writeValueAsString(values))).andExpect(status().isOk());
+        mvc.perform(get("/api/portfolio")).andExpect(jsonPath("$[0].title").value("Updated project")).andExpect(jsonPath("$[0].projectUrl").value(values.get("projectUrl"))).andExpect(jsonPath("$[0].imageUrl").value(values.get("imageUrl"))).andExpect(jsonPath("$[0].featured").value(true));
+        mvc.perform(put(path).with(csrf()).contentType(MediaType.APPLICATION_JSON).content(json.writeValueAsString(values))).andExpect(status().isConflict());
+    }
+    private void assertPortfolioFields(Map<String,Object> expected,Map<String,Object> actual){
+        for(String field:List.of("name","slug","shortDescription","description","icon","imageUrl","displayOrder","active","category","technologies","projectUrl","featured","concept"))assertEquals(expected.get(field),actual.get(field),field);
+    }
+    @Test @WithMockUser(roles="ADMIN") void portfolioOptionalFieldsArePreservedWhenOmittedAndCanBeCleared() throws Exception {
+        var request=item("preserved-portfolio",true);request.put("category","Keep category");request.put("projectUrl","www.abc.com");request.put("imageUrl","assets/images/project.jpg");request.put("concept",false);
+        var saved=create("portfolio",request);String path="/api/admin/cms/portfolio/"+saved.get("id");
+        var omitted=new LinkedHashMap<>(saved);
+        for(String field:List.of("imageUrl","category","technologies","projectUrl","featured","concept"))omitted.remove(field);
+        omitted.put("name","Edited without optional fields");
+        String result=mvc.perform(put(path).with(csrf()).contentType(MediaType.APPLICATION_JSON).content(json.writeValueAsString(omitted))).andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+        var retained=json.readValue(result,new com.fasterxml.jackson.core.type.TypeReference<Map<String,Object>>(){});
+        saved.put("name",omitted.get("name"));assertPortfolioFields(saved,retained);
+        retained.put("imageUrl","");retained.put("projectUrl","");retained.put("category","");retained.put("technologies",List.of());retained.put("featured",false);retained.put("concept",false);
+        mvc.perform(put(path).with(csrf()).contentType(MediaType.APPLICATION_JSON).content(json.writeValueAsString(retained))).andExpect(status().isOk());
+        var stored=projects.findById(((Number)saved.get("id")).longValue()).orElseThrow();
+        assertNull(stored.getImageUrl());assertNull(stored.getProjectUrl());assertNull(stored.getCategory());assertTrue(stored.getTechnologies().isEmpty());assertFalse(stored.isFeatured());assertFalse(stored.isConcept());
+        mvc.perform(get(path)).andExpect(jsonPath("$.imageUrl").isEmpty()).andExpect(jsonPath("$.projectUrl").isEmpty()).andExpect(jsonPath("$.technologies").isEmpty());
+    }
+    @Test @WithMockUser(roles="ADMIN") void portfolioUrlValidationAndStableInternalRouting() throws Exception {
+        for(String url:List.of("www.abc.com","abc.com/path?x=1#demo","www.abc.com/index.html","https://www.abc.com","http://www.abc.com","/portfolio","contact.html")){
+            var r=item("url-check-"+projects.count(),true);r.put("projectUrl",url);create("portfolio",r);
+        }
+        for(String image:List.of("images/project.jpg","/uploads/project.WEBP?v=2","https://images.example.test/render?w=100","http://example.test/project.png","https://example.test")){
+            var r=item("image-check-"+projects.count(),true);r.put("imageUrl",image);create("portfolio",r);
+        }
+        for(String unsafe:List.of("javascript:alert(1)","data:text/html,test","//evil.example/path","https://user:pass@example.test/path","file:///private.png","https://example.test:99999/path")){
+            var r=item("unsafe-url",true);r.put("projectUrl",unsafe);
+            mvc.perform(post("/api/admin/cms/portfolio").with(csrf()).contentType(MediaType.APPLICATION_JSON).content(json.writeValueAsString(r))).andExpect(status().isBadRequest()).andExpect(jsonPath("$.fieldErrors.projectUrl").exists());
+        }
+        for(String unsafe:List.of("../private.png","/images/../private.png","/images/%2e%2e/private.png","//example.test/image.png","https://example.test/payload.svg","/images/test.php")){
+            var r=item("unsafe-image",true);r.put("imageUrl",unsafe);
+            mvc.perform(post("/api/admin/cms/portfolio").with(csrf()).contentType(MediaType.APPLICATION_JSON).content(json.writeValueAsString(r))).andExpect(status().isBadRequest()).andExpect(jsonPath("$.fieldErrors.imageUrl").exists());
+        }
+        var saved=create("portfolio",item("stable-portfolio",true));saved.put("slug","different-portfolio");
+        mvc.perform(put("/api/admin/cms/portfolio/"+saved.get("id")).with(csrf()).contentType(MediaType.APPLICATION_JSON).content(json.writeValueAsString(saved))).andExpect(status().isBadRequest()).andExpect(jsonPath("$.fieldErrors.slug").exists());
+        mvc.perform(get("/api/portfolio/stable-portfolio")).andExpect(status().isOk());
+    }
     @Test @WithMockUser(roles="ADMIN") void documentsValidationAndPublicUpdates() throws Exception {
         var document=content.get("home");Map<String,String> values=new LinkedHashMap<>(document.content());values.put("subtitle","Updated homepage content from the test database.");values.put("primaryCtaUrl","/contact");
         mvc.perform(put("/api/admin/content/home").with(csrf()).contentType(MediaType.APPLICATION_JSON).content(json.writeValueAsString(Map.of("version",document.version(),"content",values)))).andExpect(status().isOk());

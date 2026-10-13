@@ -31,11 +31,19 @@ public class CmsService {
         boolean duplicate=service?(id==null?services.existsBySlug(r.slug()):services.existsBySlugAndIdNot(r.slug(),id)):(id==null?projects.existsBySlug(r.slug()):projects.existsBySlugAndIdNot(r.slug(),id));
         if(duplicate)throw new CmsValidationException("slug","This slug is already in use.");
         CmsValidation.url("imageUrl",r.imageUrl(),true);
-        CmsValidation.url("projectUrl",r.projectUrl(),false);
+        String projectUrl=service?null:CmsValidation.projectUrl(r.projectUrl());
         item.setName(r.name().trim());item.setSlug(r.slug());item.setShortDescription(r.shortDescription().trim());item.setDescription(r.description().trim());
-        item.setIcon(r.icon());item.setImageUrl(clean(r.imageUrl()));item.setDisplayOrder(r.displayOrder());item.setActive(r.active());
+        item.setIcon(r.icon());if(id==null||r.imageUrl()!=null)item.setImageUrl(clean(r.imageUrl()));item.setDisplayOrder(r.displayOrder());item.setActive(r.active());
         if(item instanceof WebsiteService s){s.setCapabilities(list(r.capabilities()));s.setBenefits(list(r.benefits()));s.setUseCases(clean(r.useCases()));services.saveAndFlush(s);}
-        if(item instanceof PortfolioProject p){p.setCategory(clean(r.category()));p.setTechnologies(list(r.technologies()));p.setProjectUrl(clean(r.projectUrl()));p.setFeatured(Boolean.TRUE.equals(r.featured()));p.setConcept(!Boolean.FALSE.equals(r.concept()));projects.saveAndFlush(p);}
+        if(item instanceof PortfolioProject p){
+            // Older clients may omit optional fields. An explicit empty value clears them.
+            if(id==null||r.category()!=null)p.setCategory(clean(r.category()));
+            if(id==null||r.technologies()!=null)p.setTechnologies(list(r.technologies()));
+            if(id==null||r.projectUrl()!=null)p.setProjectUrl(projectUrl);
+            if(id==null||r.featured()!=null)p.setFeatured(Boolean.TRUE.equals(r.featured()));
+            if(id==null||r.concept()!=null)p.setConcept(!Boolean.FALSE.equals(r.concept()));
+            projects.saveAndFlush(p);
+        }
         return AdminCmsItem.from(item);
     }
     @Transactional public void delete(String kind,Long id){CmsItem item=find(kind,id);if(item instanceof WebsiteService s)services.delete(s);else projects.delete((PortfolioProject)item);}

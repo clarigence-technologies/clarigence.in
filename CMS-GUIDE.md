@@ -50,6 +50,8 @@ The first startup seeds the ten reviewed existing services and default page/sett
 
 Lower display order appears first; equal orders use ID as a stable tiebreaker. Slugs become read-only after creation, including server-side enforcement, to preserve shared URLs. Use deactivate/unpublish instead of deleting content you may need again. Version checks prevent silently overwriting another session's edits; reload if the CMS reports a conflict.
 
+Portfolio's stable internal slug is separate from **Project URL**. Enter `www.abc.com`, `abc.com/work`, `https://www.abc.com`, or an HTTP URL in Project URL; addresses without a scheme are saved with `https://`. Existing local page links remain supported. Edit fetches the latest complete record, and admin reads bypass browser caching. Optional portfolio fields omitted or null in API updates retain their saved values; send an empty string or empty list to clear text/list fields, and explicit `false` to disable a flag. No schema migration or existing-record rewrite is needed.
+
 Changes appear after refreshing the public page. Responses are fetched once per endpoint per page load, with no persistent content cache. Public lists include only active records. The homepage shows up to two active, featured projects.
 
 ## APIs
@@ -72,7 +74,7 @@ Admin item requests use `name` for both service names and portfolio titles, alon
 
 Existing BCrypt authentication, session behavior, admin roles and CSRF protection remain intact. Only specified public GET routes are opened. CMS mutations remain admin-only and use the existing CSRF helper. CORS adds GET to the configured exact-origin policy; it does not use wildcard origins, allow credentialed public reads, or allow cross-origin PUT/DELETE.
 
-Content is rendered with DOM text nodes, not raw HTML. Server-side schemas restrict fields and sizes, validate names/slugs/orders/emails/URLs, reject duplicate slugs and block unsafe image paths. There is no upload endpoint. Use an existing `assets/...` raster image path or an HTTPS raster image URL; SVG, executable schemes, path traversal and credentials in URLs are rejected. Broken images are removed gracefully. Add local image files under `assets/` through your normal project workflow.
+Content is rendered with DOM text nodes, not raw HTML. Server-side schemas restrict fields and sizes, validate names/slugs/orders/emails/URLs, reject duplicate slugs and block unsafe image paths. There is no upload endpoint. Images accept existing raster paths such as `assets/images/project.png`, `/images/project.jpg`, or `/uploads/project.webp`, including query parameters and uppercase extensions. Local paths resolve from the public website root and must refer to files actually served by the website, rather than a Windows filesystem path. External HTTP/HTTPS raster URLs and extensionless image CDN endpoints with query parameters are supported. Prefer HTTPS for images on the HTTPS public site. SVG, executable schemes, path traversal and credentials in URLs remain rejected. Broken images are removed gracefully. Add local image files through your normal project workflow; the current static build copies `assets/`, so use that directory for images shipped with this project.
 
 ## Frontend configuration and deployment
 
