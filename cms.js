@@ -56,6 +56,7 @@
     const path=document.createElementNS(svg.namespaceURI,'path');path.setAttribute('d',icons[name]||icons.window);svg.append(path);wrapper.append(svg);return wrapper;
   };
   const image=(url,alt,classes) => {
+    if(/^\/api\/portfolio\/images\/[a-f0-9-]+\.(png|jpg|gif)$/.test(url))url=`${window.CLARIGENCE_CONFIG.apiBaseUrl}${url}`;
     const img=node('img',classes);img.src=safeUrl(url,true);img.alt=alt;img.loading='lazy';img.decoding='async';
     img.addEventListener('error',()=>img.remove(),{once:true});return img;
   };

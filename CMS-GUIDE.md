@@ -25,12 +25,13 @@ If port 8000 already has the preview server running, use that server instead of 
 
 ## Database additions
 
-The existing `spring.jpa.hibernate.ddl-auto=update` strategy adds three tables alongside `contacts` and `admin_users`:
+The existing `spring.jpa.hibernate.ddl-auto=update` strategy adds the CMS tables alongside `contacts` and `admin_users`:
 
 | Table | Content |
 |---|---|
 | `website_services` | Service names, stable slugs, descriptions, capabilities, benefits, image paths, order, publication status and UTC audit fields |
 | `portfolio_projects` | Project title (stored as `name`), stable slug, category, descriptions, technologies, image/project URLs, concept/featured flags, order and UTC audit fields |
+| `portfolio_images` | Uploaded portfolio photos stored as MEDIUMBLOB with generated filenames |
 | `site_documents` | Validated homepage, About, business information and six page-specific SEO documents, with versions and UTC audit fields |
 
 Long descriptions and short ordered lists use TEXT; document JSON uses LONGTEXT to fit MySQL's row-size limits. Lists are small validated ordered values in the same row, avoiding collection-query overhead.
@@ -53,6 +54,10 @@ Lower display order appears first; equal orders use ID as a stable tiebreaker. S
 Portfolio's stable internal slug is separate from **Project URL**. Enter `www.abc.com`, `abc.com/work`, `https://www.abc.com`, or an HTTP URL in Project URL; addresses without a scheme are saved with `https://`. Existing local page links remain supported. Edit fetches the latest complete record, and admin reads bypass browser caching. Optional portfolio fields omitted or null in API updates retain their saved values; send an empty string or empty list to clear text/list fields, and explicit `false` to disable a flag. No schema migration or existing-record rewrite is needed.
 
 Changes appear after refreshing the public page. Responses are fetched once per endpoint per page load, with no persistent content cache. Public lists include only active records. The homepage shows up to two active, featured projects.
+
+Portfolio Add/Edit includes **Upload photo (optional)**. Choose one PNG, JPEG or GIF up to 5 MB and 16 million pixels, then Save. The authenticated, CSRF-protected upload endpoint stores validated image bytes in MySQL and fills Image URL/path automatically. Leaving the chooser empty keeps the existing URL; a new project can be saved without a photo. The public site resolves uploaded paths against the backend API origin. Uploaded photos survive container restarts and redeploys with the database. Include `portfolio_images` in database backups. Photos are retained when a project is deleted or its image is replaced; automatic removal is not implemented. If the project save fails after upload, the generated URL stays in the form for retry.
+
+Upload API: `POST /api/admin/cms/portfolio/images` with multipart `file`; public image bytes: `GET /api/portfolio/images/{id}`. Deploy the backend and public `cms.js` together to enable this feature on the live site.
 
 ## APIs
 

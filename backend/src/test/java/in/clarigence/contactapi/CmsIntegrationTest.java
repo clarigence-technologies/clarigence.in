@@ -32,6 +32,28 @@ class CmsIntegrationTest {
     private Map<String,Object> item(String slug,boolean active){
         Map<String,Object> r=new LinkedHashMap<>();r.put("name","Verification content");r.put("slug",slug);r.put("shortDescription","A test record in the isolated database.");r.put("description","Useful content for testing the CMS without touching MySQL.");r.put("icon","window");r.put("imageUrl","");r.put("displayOrder",1);r.put("active",active);r.put("capabilities",List.of("Planning","Development"));r.put("benefits",List.of("Clear processes"));r.put("technologies",List.of("Java"));r.put("featured",true);r.put("concept",true);return r;
     }
+    @Test @WithMockUser(roles="ADMIN") void optionalPortfolioPhotoUpload() throws Exception {
+        var output=new java.io.ByteArrayOutputStream();
+        javax.imageio.ImageIO.write(new java.awt.image.BufferedImage(2,2,java.awt.image.BufferedImage.TYPE_INT_RGB),"png",output);
+        byte[] bytes=output.toByteArray();
+        var file=new org.springframework.mock.web.MockMultipartFile("file","photo.png","image/png",bytes);
+        mvc.perform(multipart("/api/admin/cms/portfolio/images").file(file)).andExpect(status().isForbidden());
+        var result=mvc.perform(multipart("/api/admin/cms/portfolio/images").file(file).with(csrf()))
+            .andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();
+        String path=json.readTree(result).get("imageUrl").asText();
+        mvc.perform(get(path)).andExpect(status().isOk()).andExpect(content().contentType("image/png")).andExpect(content().bytes(bytes));
+        var request=item("uploaded-photo",true);request.put("imageUrl",path);create("portfolio",request);
+        mvc.perform(get("/api/portfolio/uploaded-photo")).andExpect(jsonPath("$.imageUrl").value(path));
+        create("portfolio",item("no-photo",true));
+        mvc.perform(multipart("/api/admin/cms/portfolio/images").file(new org.springframework.mock.web.MockMultipartFile("file","fake.png","image/png","invalid".getBytes())).with(csrf()))
+            .andExpect(status().isBadRequest()).andExpect(jsonPath("$.fieldErrors.photo").exists());
+        mvc.perform(multipart("/api/admin/cms/portfolio/images").file(new org.springframework.mock.web.MockMultipartFile("file","big.png","image/png",new byte[5*1024*1024+1])).with(csrf()))
+            .andExpect(status().isBadRequest());
+    }
+    @Test void photoUploadRequiresLogin() throws Exception {
+        mvc.perform(multipart("/api/admin/cms/portfolio/images").file(new org.springframework.mock.web.MockMultipartFile("file","photo.png","image/png",new byte[]{1})).with(csrf()))
+            .andExpect(status().isUnauthorized());
+    }
     private Map<String,Object> create(String kind,Map<String,Object> request) throws Exception {
         String result=mvc.perform(post("/api/admin/cms/"+kind).with(csrf()).contentType(MediaType.APPLICATION_JSON).content(json.writeValueAsString(request))).andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();
         return json.readValue(result,new com.fasterxml.jackson.core.type.TypeReference<Map<String,Object>>(){});

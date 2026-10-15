@@ -82,7 +82,7 @@
     input.id=title.htmlFor;input.name=name;input.required=required;input.value=Array.isArray(value)?value.join('\n'):String(value??'');
     input.dataset.type=type;const error=el('span','cms-field-error');error.id=`${input.id}-error`;input.setAttribute('aria-describedby',error.id);input.addEventListener('input',()=>{error.textContent='';input.removeAttribute('aria-invalid');});
     wrap.append(title,input,error);if(type==='list')wrap.append(el('small','','One item per line (maximum 20).'));
-    if(type==='image')wrap.append(el('small','','Use a served local image path, such as /assets/images/project.png or /images/project.jpg, or an HTTP/HTTPS image URL. No uploads in this version.'));
+    if(type==='image')wrap.append(el('small','','Use a served local image path, such as /assets/images/project.png or /images/project.jpg, or an HTTP/HTTPS image URL. The file must already be available at this address.'));
     if(name==='slug'){
       input.pattern='[a-z0-9]+(?:-[a-z0-9]+)*';
       wrap.append(el('small','','Internal identifier, such as my-project. It stays fixed after creation. Enter the website address in Project URL.'));
@@ -103,6 +103,14 @@
     if(kind==='services')definitions.push({name:'capabilities',label:'Key capabilities',type:'list',max:6000},{name:'benefits',label:'Business benefits',type:'list',max:6000},{name:'useCases',label:'Typical use cases',type:'textarea',max:2000});
     else definitions.push({name:'category',label:'Category',max:120},{name:'technologies',label:'Technologies',type:'list',max:2400},{name:'projectUrl',label:'Project URL (optional)',type:'url',max:2048},{name:'featured',label:'Featured on homepage',type:'boolean'},{name:'concept',label:'Clearly label as demo / concept',type:'boolean'});
     definitions.forEach(def=>field(form,def,item?.[def.name]??({displayOrder:10,active:false,featured:false,concept:true,icon:'window'}[def.name]??'')));
+    if(kind==='portfolio'){
+      const wrap=el('div','cms-field');const label=el('label','','Upload photo (optional)');label.htmlFor='cms-photo';
+      const photo=el('input');photo.type='file';photo.id='cms-photo';photo.name='photo';photo.accept='image/png,image/jpeg,image/gif';
+      const error=el('span','cms-field-error');error.id='cms-photo-error';photo.setAttribute('aria-describedby','cms-photo-help cms-photo-error');
+      const help=el('small','','Choose a PNG, JPEG or GIF photo up to 5 MB (maximum 16 million pixels). It replaces the image URL when you save. Leave empty to keep the current image or save without a photo.');help.id='cms-photo-help';
+      photo.addEventListener('change',()=>{error.textContent='';photo.removeAttribute('aria-invalid');});
+      wrap.append(label,photo,help,error);form.elements.imageUrl.closest('.cms-field').before(wrap);
+    }
     if(item)form.elements.slug.readOnly=true;
     else{let edited=false;form.elements.slug.addEventListener('input',()=>edited=true);form.elements.name.addEventListener('input',()=>{if(!edited)form.elements.slug.value=form.elements.name.value.toLowerCase().normalize('NFKD').replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');});}
     const actions=el('div','cms-form-actions');const save=el('button','button primary-button','Save');save.type='submit';actions.append(save,button('Cancel',()=>openModule(kind)));form.append(actions);panel.append(form);form.elements.name.focus();
@@ -110,7 +118,15 @@
       event.preventDefault();if(save.disabled||!form.reportValidity())return;save.disabled=true;save.textContent='Saving…';status(message,'Saving content…');
       const payload={version:item?.version??null};
       definitions.forEach(def=>{const input=form.elements.namedItem(def.name);payload[def.name]=def.type==='boolean'?input.value==='true':def.type==='number'?Number(input.value):def.type==='list'?input.value.split('\n').map(s=>s.trim()).filter(Boolean):input.value.trim();});
-      try{await apiRequest(`/api/admin/cms/${kind}${item?`/${item.id}`:''}`,{method:item?'PUT':'POST',body:JSON.stringify(payload)});await openModule(kind);status(panel.querySelector('.form-message'),'Content saved. Refresh the public page to see the change.','success');summary();}
+      try{
+        const photo=form.elements.namedItem('photo');const file=photo?.files[0];
+        if(file){
+          if(file.size>5*1024*1024)throw Object.assign(new Error('Choose a photo up to 5 MB.'),{fieldErrors:{photo:'Choose a photo up to 5 MB.'}});
+          status(message,'Uploading photo...');const body=new FormData();body.append('file',file);
+          const uploaded=await apiRequest('/api/admin/cms/portfolio/images',{method:'POST',body});
+          payload.imageUrl=uploaded.imageUrl;form.elements.imageUrl.value=uploaded.imageUrl;photo.value='';
+        }
+        await apiRequest(`/api/admin/cms/${kind}${item?`/${item.id}`:''}`,{method:item?'PUT':'POST',body:JSON.stringify(payload)});await openModule(kind);status(panel.querySelector('.form-message'),'Content saved. Refresh the public page to see the change.','success');summary();}
       catch(error){formFeedback(form,message,error);}
       finally{save.disabled=false;save.textContent='Save';}
     });

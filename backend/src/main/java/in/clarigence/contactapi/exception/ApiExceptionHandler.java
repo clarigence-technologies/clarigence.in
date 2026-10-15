@@ -25,6 +25,11 @@ public class ApiExceptionHandler {
 
     private static final Logger log = LoggerFactory.getLogger(ApiExceptionHandler.class);
 
+    @ExceptionHandler(org.springframework.web.multipart.MaxUploadSizeExceededException.class)
+    public ResponseEntity<ApiErrorResponse> handleUploadSize(Exception error,HttpServletRequest request){
+        return response(HttpStatus.PAYLOAD_TOO_LARGE,"Choose a photo up to 5 MB.",request,Map.of("photo","Choose a photo up to 5 MB."));
+    }
+
     @ExceptionHandler(CmsValidationException.class)
     public ResponseEntity<ApiErrorResponse> handleCmsValidation(CmsValidationException error,HttpServletRequest request){
         return response(HttpStatus.BAD_REQUEST,error.getMessage(),request,error.getFields());
