@@ -79,7 +79,7 @@ function statusClass(status) {
 }
 
 function readableStatus(status) {
-  return status.charAt(0) + status.slice(1).toLowerCase();
+  return status.split('_').map(word => word.charAt(0) + word.slice(1).toLowerCase()).join(' ');
 }
 
 function formatDate(value) {
@@ -147,6 +147,7 @@ async function refreshDashboard() {
     document.querySelector('#stat-total').textContent = summary.totalEnquiries;
     document.querySelector('#stat-new').textContent = summary.enquiriesByStatus.NEW || 0;
     document.querySelector('#stat-contacted').textContent = summary.enquiriesByStatus.CONTACTED || 0;
+    document.querySelector('#stat-in-progress').textContent = summary.enquiriesByStatus.IN_PROGRESS || 0;
     document.querySelector('#stat-converted').textContent = summary.enquiriesByStatus.CONVERTED || 0;
     document.querySelector('#stat-closed').textContent = summary.enquiriesByStatus.CLOSED || 0;
     renderEnquiries(pageData);
@@ -173,6 +174,8 @@ function addDetailField(container, label, value, options = {}) {
 async function openEnquiry(id) {
   setMessage(detailMessage, 'Loading enquiry…');
   activeEnquiryId = id;
+  document.querySelector('#retry-notification').disabled = true;
+  document.querySelector('#detail-content').replaceChildren();
   detailDialog.showModal();
   try {
     const item = await apiRequest(`/api/admin/enquiries/${id}`);
@@ -187,6 +190,10 @@ async function openEnquiry(id) {
     addDetailField(grid, 'SERVICE REQUIRED', item.service);
     addDetailField(grid, 'RECEIVED', formatDate(item.createdAt));
     addDetailField(grid, 'MESSAGE', item.message, { full: true });
+    addDetailField(grid, 'EMAIL NOTIFICATION', readableStatus(item.notificationStatus));
+    addDetailField(grid, 'LAST EMAIL ATTEMPT', formatDate(item.notificationAttemptedAt));
+    if (item.notificationError) addDetailField(grid, 'EMAIL DELIVERY NOTE', item.notificationError, { full: true });
+    document.querySelector('#retry-notification').disabled = item.notificationStatus === 'SENT';
     content.append(grid);
     document.querySelector('#detail-status').value = item.status;
     setMessage(detailMessage, '');
@@ -307,6 +314,23 @@ document.querySelector('#delete-enquiry').addEventListener('click', async (event
   } catch (error) {
     setMessage(detailMessage, error.message, 'error');
   } finally {
+    button.disabled = false;
+  }
+});
+
+document.querySelector('#retry-notification').addEventListener('click', async event => {
+  if (!activeEnquiryId) return;
+  const button = event.currentTarget;
+  button.disabled = true;
+  try {
+    const item = await apiRequest(`/api/admin/enquiries/${activeEnquiryId}/notification/retry`, { method: 'POST' });
+    detailDialog.close();
+    await openEnquiry(item.id);
+    setMessage(detailMessage, item.notificationStatus === 'SENT' ? 'Email accepted by the provider.' :
+      'Email was not sent. Your enquiry remains saved. Check the delivery note and backend configuration.',
+      item.notificationStatus === 'SENT' ? 'success' : 'error');
+  } catch (error) {
+    setMessage(detailMessage, error.message, 'error');
     button.disabled = false;
   }
 });

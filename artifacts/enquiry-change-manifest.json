@@ -1,0 +1,122 @@
+[
+  {
+    "path": "script.js",
+    "before": "179eb949fa827982eac1fc33142d54ebb4775d9287dce8a6e0f081a13d1d0bcb",
+    "after": "75e22340484afe4b33b5e7f76cc6fb16015a54709f0dd2e23dcc30210dc9d844"
+  },
+  {
+    "path": "ENQUIRY-DEPLOYMENT.md",
+    "before": null,
+    "after": "be5e8da8b33e7d018d1f6093aec2c1f76990d6370dc7d4b64a43b87838ad503c"
+  },
+  {
+    "path": "backend/README.md",
+    "before": "022414e44d7a83c5137709e7d0861d0fe537525d661c8c71d35fea721d224bff",
+    "after": "72622c9b0c4f4f2f083f145982f5deb825ecf6f4a21cdc78bafd0cb1fa396804"
+  },
+  {
+    "path": "backend/src/main/resources/application.properties",
+    "before": "2864f8a5091d1d24895521376f5dd83c838d667917494b477f573e3e528bc0c5",
+    "after": "6a3ae0d1048bd4739646c4e4a1ec65a17898090fea2862593677d383be37244d"
+  },
+  {
+    "path": "backend/src/main/java/in/clarigence/contactapi/config/CorsConfig.java",
+    "before": "eba3449d05d668b71c0289f6b3a2ebabc0a5d8b10d04d9e9defe3ddf9f62a662",
+    "after": "e0c1877e1b0f4bbffc4d2c04ec5e46d5faaca9e1c664d0b632494df85f59dd9f"
+  },
+  {
+    "path": "backend/src/main/java/in/clarigence/contactapi/controller/AdminEnquiryController.java",
+    "before": "72e95d940f3d358f2eb8196d7dc2db70c48e05283a29ce39ad42a65323209057",
+    "after": "fa6faac1a456487edcebe2ef9dff245aa938ebb71609ddf42e5cafacf362afc1"
+  },
+  {
+    "path": "backend/src/main/java/in/clarigence/contactapi/controller/ContactController.java",
+    "before": "28ad807c0a51cdb27d81cab88ba6a8a7f933c20e42ca33f80324d5f21f66aeed",
+    "after": "a4ca03710fe7d251f888c115de609f2707f1d3d2783878604ff4f7b4488c356f"
+  },
+  {
+    "path": "backend/src/main/java/in/clarigence/contactapi/dto/ContactRequest.java",
+    "before": "bea3209e037ca45c42627aa790d5106a0d7191985c13ba8e1606ae98a76d08e6",
+    "after": "377196347ef3978ef0d03242fe086e5df262789e7caae965777b7fc7a292360b"
+  },
+  {
+    "path": "backend/src/main/java/in/clarigence/contactapi/dto/EnquiryDetails.java",
+    "before": "65a14506409ba2f5f29af3382db1d95e377254ecf32c66024cbc222183ecab91",
+    "after": "84c526d1d07a237104a318c5652d05a22f5f0aaf8c385e5a7fd72facc7939cd7"
+  },
+  {
+    "path": "backend/src/main/java/in/clarigence/contactapi/entity/Contact.java",
+    "before": "85e862743a3fe8f71ada6084377ccf1015663f49670a30957a1684d9a56a994f",
+    "after": "7483a1548a5efea110fd03a4a60ece643709d43b4141923015212e941a086b51"
+  },
+  {
+    "path": "backend/src/main/java/in/clarigence/contactapi/entity/ContactStatus.java",
+    "before": "f1d0fa68f24f643759763be2d9441f4d3b6a765dadd734b86ae6e3e2a946803d",
+    "after": "c33e39b4e7ee556ba2fdd099d0b283477f8d028dbdb4489481e88a26656021a8"
+  },
+  {
+    "path": "backend/src/main/java/in/clarigence/contactapi/exception/ApiExceptionHandler.java",
+    "before": "553038a1409676b6a75a0f6841e3056331db83fac60f7b005ac7052358008039",
+    "after": "4cd1968e4a6fa57b5a61e062af9078513cce81e0f5d2a60e6a05c1e3f569fc3e"
+  },
+  {
+    "path": "backend/src/main/java/in/clarigence/contactapi/repository/ContactRepository.java",
+    "before": "83d92830d906912986b8aadedc38352a42502f651fb9564e52fdda40091eb5aa",
+    "after": "68267962cd52edb06984aba80650c8c0782fc9e1c9231ef32c75aef1c0a619c7"
+  },
+  {
+    "path": "backend/src/main/java/in/clarigence/contactapi/service/ContactService.java",
+    "before": "4df4b7845039bcae34dbff24aede999b796deda89ccb163496af31ac0db0c554",
+    "after": "4d5a134ff4b86c23342819a1414f009bfbb568c7b6122b4bcafc8d764caf8698"
+  },
+  {
+    "path": "backend/src/main/java/in/clarigence/contactapi/service/ContactSubmissionService.java",
+    "before": null,
+    "after": "ea131dae4b9a83238c7eea4511a70a5c2948450b1daa5730e15d520925f18a83"
+  },
+  {
+    "path": "backend/src/main/java/in/clarigence/contactapi/service/EnquiryEmailNotification.java",
+    "before": "211df2f781a8a5d493981a3253712a8f821e317d8dbfa4543117cb1fe5c9b837",
+    "after": "fa22da00f785c4134f37a505938ee967555b15701af72681a0ffe3a30efe3bc6"
+  },
+  {
+    "path": "backend/src/main/java/in/clarigence/contactapi/service/NotificationDeliveryService.java",
+    "before": null,
+    "after": "64ed345b5a6b4b025a22493dc3c71116eee4f624d99d84fbcb8aee099a04c30c"
+  },
+  {
+    "path": "backend/src/main/resources/static/admin/admin.css",
+    "before": "f8b563cfdb2282475669183a9d870702d67865e885b849000a6d347e262d56e6",
+    "after": "128c018af80f933687760f7b29b15c4cae25e34415dcbb5f3cb36f883f4ef620"
+  },
+  {
+    "path": "backend/src/main/resources/static/admin/admin.js",
+    "before": "1b395443f0b33e2b1900a7b8c97612aac929ab89d52b6d30fb88671e9532a5aa",
+    "after": "c29ca902dbe125b1d69dc79908500d238beecac97e2cc93b119aef243b42019e"
+  },
+  {
+    "path": "backend/src/main/resources/static/admin/index.html",
+    "before": "c1df27a35cfe78894ed05e3ec0798f261cf68b2f6992480e451d64130da4d5d9",
+    "after": "d5db01a71ce7e784462339ebf295720cd1173cee3185852700c07890fa41ee53"
+  },
+  {
+    "path": "backend/src/test/java/in/clarigence/contactapi/ContactControllerIntegrationTest.java",
+    "before": "b116b2a630ee18787c88edae306108e707c27cb18edb8a2a65610d44e55f4194",
+    "after": "947919efd1d109164f7eb632808bf122f1966e693b79d38f3097ae1708f16288"
+  },
+  {
+    "path": "backend/src/test/java/in/clarigence/contactapi/EnquiryDowntimeIntegrationTest.java",
+    "before": null,
+    "after": "b96bff9e54ef29d805c0ba703c9a8036c9d515ed989106a5d28cbd953b9f0fe5"
+  },
+  {
+    "path": "backend/src/test/java/in/clarigence/contactapi/EnquiryEmailIntegrationTest.java",
+    "before": "b55e02d5b6f886f0b8e446ad48b06e4ae5379e59da80cb93f708762233cb1f0f",
+    "after": "a6359246a35dce1a92d5c622dd01b6733958b1fead44f647a01503c747e21fef"
+  },
+  {
+    "path": "backend/src/test/java/in/clarigence/contactapi/EnquiryRestartPersistenceTest.java",
+    "before": null,
+    "after": "a6fa116631e535717bfcf890ff64751d7a549b576a4400898caf52b42dd4980e"
+  }
+]

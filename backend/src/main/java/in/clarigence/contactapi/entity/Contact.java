@@ -45,6 +45,29 @@ public class Contact {
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
+    @Column(name = "submission_key", length = 36, unique = true)
+    private String submissionKey;
+
+    @Column(name = "notification_status", length = 20)
+    private String notificationStatus;
+
+    @Column(name = "notification_attempted_at")
+    private Instant notificationAttemptedAt;
+
+    @Column(name = "notification_error", length = 500)
+    private String notificationError;
+
+    public String getSubmissionKey() { return submissionKey; }
+    public void setSubmissionKey(String key) { submissionKey = key; }
+    public String getNotificationStatus() { return notificationStatus == null ? "NOT_ATTEMPTED" : notificationStatus; }
+    public Instant getNotificationAttemptedAt() { return notificationAttemptedAt; }
+    public String getNotificationError() { return notificationError; }
+    public void recordNotification(String status, String error) {
+        notificationStatus = status;
+        notificationAttemptedAt = Instant.now();
+        notificationError = error;
+    }
+
     protected Contact() {
     }
 

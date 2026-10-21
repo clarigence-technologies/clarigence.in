@@ -1,0 +1,2368 @@
+--- a/script.js
++++ b/script.js
+@@ -1,50 +1,50 @@
+ const menuButton = document.querySelector('.menu-toggle');
+-const nav = document.querySelector('.nav-links');
+-const servicesGroup = document.querySelector('.nav-services');
+-const servicesToggle = document.querySelector('.services-toggle');
+-const servicesDropdown = document.querySelector('.services-dropdown');
+-let servicesCloseTimer;
+-const setServicesOpen = (open, returnFocus = false) => {
+-  if (!servicesGroup || !servicesToggle || !servicesDropdown) return;
+-  clearTimeout(servicesCloseTimer);
+-  servicesGroup.classList.toggle('is-open', open);
+-  servicesToggle.setAttribute('aria-expanded', String(open));
+-  servicesDropdown.inert = !open;
+-  if (returnFocus) servicesToggle.focus();
+-};
+-if (servicesGroup && servicesToggle) {
+-  servicesToggle.addEventListener('click', () => setServicesOpen(servicesToggle.getAttribute('aria-expanded') !== 'true'));
+-  servicesGroup.addEventListener('pointerenter', event => {
+-    if (event.pointerType === 'mouse' && window.innerWidth > 900) setServicesOpen(true);
+-  });
+-  servicesGroup.addEventListener('pointerleave', event => {
+-    if (event.pointerType === 'mouse' && window.innerWidth > 900) {
+-      servicesCloseTimer = setTimeout(() => {
+-        if (!servicesGroup.contains(document.activeElement)) setServicesOpen(false);
+-      }, 160);
+-    }
+-  });
+-  servicesGroup.addEventListener('keydown', event => {
+-    if (event.key === 'Escape') {
+-      event.stopPropagation();
+-      setServicesOpen(false, true);
+-    } else if (event.key === 'ArrowDown' && event.target === servicesToggle) {
+-      event.preventDefault();
+-      setServicesOpen(true);
+-      servicesDropdown.querySelector('a')?.focus();
+-    }
+-  });
+-  document.addEventListener('pointerdown', event => {
+-    if (!servicesGroup.contains(event.target)) setServicesOpen(false);
+-  });
+-  document.addEventListener('focusin', event => {
+-    if (!servicesGroup.contains(event.target)) setServicesOpen(false);
+-  });
+-  window.matchMedia('(max-width: 900px)').addEventListener('change', () => setServicesOpen(false));
+-}
+-if (menuButton && nav) {
+-  const closeMenu = (returnFocus = false) => {
+-    setServicesOpen(false);
++const nav = document.querySelector('.nav-links');
++const servicesGroup = document.querySelector('.nav-services');
++const servicesToggle = document.querySelector('.services-toggle');
++const servicesDropdown = document.querySelector('.services-dropdown');
++let servicesCloseTimer;
++const setServicesOpen = (open, returnFocus = false) => {
++  if (!servicesGroup || !servicesToggle || !servicesDropdown) return;
++  clearTimeout(servicesCloseTimer);
++  servicesGroup.classList.toggle('is-open', open);
++  servicesToggle.setAttribute('aria-expanded', String(open));
++  servicesDropdown.inert = !open;
++  if (returnFocus) servicesToggle.focus();
++};
++if (servicesGroup && servicesToggle) {
++  servicesToggle.addEventListener('click', () => setServicesOpen(servicesToggle.getAttribute('aria-expanded') !== 'true'));
++  servicesGroup.addEventListener('pointerenter', event => {
++    if (event.pointerType === 'mouse' && window.innerWidth > 900) setServicesOpen(true);
++  });
++  servicesGroup.addEventListener('pointerleave', event => {
++    if (event.pointerType === 'mouse' && window.innerWidth > 900) {
++      servicesCloseTimer = setTimeout(() => {
++        if (!servicesGroup.contains(document.activeElement)) setServicesOpen(false);
++      }, 160);
++    }
++  });
++  servicesGroup.addEventListener('keydown', event => {
++    if (event.key === 'Escape') {
++      event.stopPropagation();
++      setServicesOpen(false, true);
++    } else if (event.key === 'ArrowDown' && event.target === servicesToggle) {
++      event.preventDefault();
++      setServicesOpen(true);
++      servicesDropdown.querySelector('a')?.focus();
++    }
++  });
++  document.addEventListener('pointerdown', event => {
++    if (!servicesGroup.contains(event.target)) setServicesOpen(false);
++  });
++  document.addEventListener('focusin', event => {
++    if (!servicesGroup.contains(event.target)) setServicesOpen(false);
++  });
++  window.matchMedia('(max-width: 900px)').addEventListener('change', () => setServicesOpen(false));
++}
++if (menuButton && nav) {
++  const closeMenu = (returnFocus = false) => {
++    setServicesOpen(false);
+     nav.classList.remove('open');
+     menuButton.setAttribute('aria-expanded', 'false');
+     menuButton.setAttribute('aria-label', 'Open navigation');
+@@ -104,6 +104,8 @@
+       option.textContent.toLowerCase().replaceAll(' ', '-') === requested);
+     if (match) form.elements.service.value = match.value;
+   }
++  let submissionKey = null;
++  let submittedBody = null;
+   form.noValidate = true;
+   form.addEventListener('submit', async event => {
+     event.preventDefault();
+@@ -122,6 +124,11 @@
+       notify('Please check the highlighted fields.', 'error');
+       invalid.focus();
+       return;
++    }
++    const body = JSON.stringify(Object.fromEntries(new FormData(form)));
++    if (body !== submittedBody || !submissionKey) {
++      submissionKey = crypto.randomUUID();
++      submittedBody = body;
+     }
+     const original = button.innerHTML;
+     button.disabled = true;
+@@ -135,8 +142,8 @@
+       if (!endpoint) throw new Error('Missing contact configuration');
+       const response = await fetch(endpoint, {
+         method: 'POST',
+-        headers: {'Content-Type': 'application/json', 'Accept': 'application/json'},
+-        body: JSON.stringify(Object.fromEntries(new FormData(form))),
++        headers: {'Content-Type': 'application/json', 'Accept': 'application/json', 'Idempotency-Key': submissionKey},
++        body,
+         signal: controller.signal
+       });
+       const result = await response.json().catch(() => null);
+@@ -149,8 +156,10 @@
+         if (names.length) names[0].focus();
+         return;
+       }
+-      if (response.status !== 201 || !result) throw new Error('Unexpected response');
++      if (response.status !== 201 || !Number.isSafeInteger(result?.id) || result.id < 1) throw new Error('Unexpected response');
+       form.reset();
++      submissionKey = null;
++      submittedBody = null;
+       notify('Thank you. Your enquiry has been sent. We’ll be in touch to discuss your project.', 'success');
+       status.focus();
+     } catch {
+--- /dev/null
++++ b/ENQUIRY-DEPLOYMENT.md
+@@ -0,0 +1,119 @@
++# Clarigence enquiry repair and deployment
++
++## Confirmed production outage
++
++On 21 October 2026, the public `https://www.clarigence.in/api-config.js`
++still configured `https://clarigencein-production.up.railway.app`.
++Both the public service-list request and OPTIONS `/api/contact` returned Railway
++HTTP 404 with `Application not found` and `x-railway-fallback: true`.
++The application is unavailable at that address. This is consistent with the
++reported expired account; the exact account/billing reason is not visible from
++public HTTP checks. CORS, database and SMTP cannot be validated behind that
++unavailable application. No production enquiry was created during these checks.
++
++The source `api-config.js` deliberately uses localhost for development. The
++existing production build requires an explicit HTTPS backend endpoint and refuses
++to deploy with localhost. Do not replace the expired Railway URL with an invented
++URL: select a working backend, verify it, then update the frontend environment.
++
++## Hosting choices (no service has been purchased or provisioned)
++
++1. Prefer an always-on Docker-capable host with externally persisted MySQL and
++   backups. Reuse the included Java 21 Dockerfile. A small paid instance may be
++   needed for predictable availability; select and approve any paid plan yourself.
++2. Render Free can run the backend container as a no-cost evaluation option, but
++   it sleeps after 15 idle minutes and blocks SMTP ports 25/465/587. Cold starts
++   can exceed the form timeout. Use the existing HTTPS email transport on that
++   host, within your provider's approved allowance. Free ephemeral disk must
++   never hold the production database. This is not the preferred reliability option.
++   https://render.com/docs/free
++   https://render.com/docs/deploys
++3. Oracle Cloud Always Free compute is another candidate for a Docker backend and
++   MySQL on a persistent block volume, subject to account eligibility, capacity,
++   quotas and idle-instance reclamation rules. You must manage TLS, firewall,
++   OS updates and off-machine database backups. Confirm actual availability and
++   costs before provisioning. https://docs.oracle.com/en-us/iaas/Content/FreeTier/freetier_topic-Always_Free_Resources.htm
++
++The existing backend Vercel configuration is preserved. Its presence does not
++prove container availability or database connectivity for your current account.
++Do not move production onto an unverified deployment.
++
++## Preserve and migrate existing data
++
++- First recover and export the existing Railway MySQL database, including
++  contacts, admin_users and all CMS tables, through the provider's authenticated
++  console. An expired application does not establish whether that data still
++  exists. Contact the provider if access has been suspended. Never initialize
++  a replacement empty database and assume old enquiries were recovered.
++- Take an encrypted backup and test an import into the replacement persistent
++  MySQL instance. Retain admin password hashes; existing login needs no reset.
++- `spring.jpa.hibernate.ddl-auto=update` already performs additive schema updates.
++  This update adds nullable submission_key (unique, varchar(36)),
++  notification_status (varchar(20)), notification_attempted_at (timestamp), and
++  notification_error (varchar(500)) columns. Historical rows are retained and
++  null delivery state displays as NOT_ATTEMPTED.
++- Allow IN_PROGRESS in contacts.status. If your existing MySQL column is ENUM,
++  extend it to include IN_PROGRESS and retain ALL existing values, including
++  CONVERTED, using the provider's migration tools. Validate this on a restored
++  backup before production. The application must have ALTER/INDEX privileges
++  for Hibernate update, or a DBA must apply the additive migration first.
++- Never run create-drop, DROP, TRUNCATE, deleteAll or test fixtures on production.
++  Tests use isolated H2 databases; restart persistence uses a temporary file DB.
++- MySQL must live outside the application container's ephemeral filesystem.
++  Configure backups and retention on the actual persistent database provider.
++
++## Backend environment (private host settings)
++
++Set SPRING_PROFILES_ACTIVE=production, DB_URL (a JDBC MySQL URL using the
++provider's verified TLS settings), DB_USERNAME and DB_PASSWORD. Database secrets
++belong only on the backend. Configure connectTimeout/socketTimeout according to
++provider instructions. DB_CONNECTION_TIMEOUT_MS defaults to 5000 for acquiring a
++pool connection. The container accepts PORT; SERVER_PORT overrides it if set.
++
++Set CORS_ALLOWED_ORIGINS=https://www.clarigence.in,https://clarigence.in and
++SESSION_COOKIE_SECURE=true. The production profile handles forwarded HTTPS
++headers. Serve the admin panel from the backend's own HTTPS /admin/ URL.
++Existing BCrypt accounts, session authentication and CSRF protection remain.
++Do not enable ADMIN_BOOTSTRAP_ENABLED on a migrated database.
++
++If deploying multiple instances with the existing vercel profile, provision the
++existing mysql-session-schema.sql and shared JDBC sessions as documented in
++backend/README.md. Otherwise session affinity or shared sessions are required
++for reliable login across instances.
++
++For SMTP: set ENQUIRY_EMAIL_ENABLED=true, ENQUIRY_EMAIL_PROVIDER=smtp,
++SMTP_HOST, SMTP_PORT, SMTP_USERNAME, SMTP_PASSWORD, ENQUIRY_EMAIL_FROM and
++ENQUIRY_EMAIL_TO=hello@clarigence.in. Defaults use authenticated STARTTLS on
++587. Port 465 also requires the provider's SSL settings; changing only the port
++is insufficient. Verify the host permits outbound SMTP and the sender is authorized.
++
++For the already implemented HTTPS transport: set ENQUIRY_EMAIL_PROVIDER=resend,
++RESEND_API_KEY, ENQUIRY_EMAIL_FROM (verified sender domain),
++ENQUIRY_EMAIL_TO=hello@clarigence.in and ENQUIRY_EMAIL_ENABLED=true. Do not
++purchase a plan without approval. Keep API keys private and existing mailbox MX
++records intact. Domain verification and mailbox delivery are external setup.
++
++## Release and verification
++
++1. Restore the database and deploy backend/Dockerfile with backend as build context.
++2. Verify HTTPS startup and MySQL connectivity. Empty JSON POST /api/contact must
++   return 400 with validation errors; a preflight from each Clarigence origin
++   must allow POST and headers Content-Type, Accept and Idempotency-Key.
++3. Confirm unauthenticated /api/admin/enquiries returns 401. Log in with your
++   existing account at /admin/. Verify old enquiries and CMS content are present.
++4. Set CLARIGENCE_API_BASE_URL=https://YOUR-VERIFIED-BACKEND in the existing
++   frontend Vercel project (or CLARIGENCE_API_URL with /api/contact appended).
++   Redeploy the frontend. No backend secret belongs in this environment or JS.
++   Verify the live /api-config.js points to the verified host.
++5. Submit an owner-approved real test enquiry. Confirm HTTP 201, its saved ID,
++   all details and newest-first admin visibility. Change status to In Progress.
++   Confirm hello@clarigence.in receives the notification, not just provider acceptance.
++6. In staging, test a deliberately unavailable email provider: the enquiry must
++   still return 201, appear in admin and show FAILED. Restore provider settings
++   and use Retry email notification. Unauthorized/CSRF-free retries must fail.
++7. Restart/redeploy backend and confirm the test record remains. In staging,
++   stop backend/database: the form must show an error and retain all fields.
++   Restore service and retry unchanged details; no duplicate record should appear.
++
++Production is NOT fixed until this release checklist passes on the live backend
++and persistent MySQL. The old Railway URL cannot be restored through code.
+--- a/backend/README.md
++++ b/backend/README.md
+@@ -170,7 +170,7 @@
+ - Dashboard totals for all enquiries and each status.
+ - Search by name, email, company, service, or message; filter by status and paginate results.
+ - View full enquiry details, including phone and message.
+-- Set status to `NEW`, `CONTACTED`, `CONVERTED`, or `CLOSED`.
++- Set status to `NEW`, `CONTACTED`, `IN_PROGRESS`, or `CLOSED`; historical `CONVERTED` records and controls are retained.
+ - Delete enquiries after an explicit confirmation.
+ - Sign out to invalidate the current admin session.
+ 
+@@ -193,7 +193,7 @@
+ py -m http.server 8000
+ ```
+ 
+-Visit http://localhost:8000 for the public site. The contact form posts to the backend and shows an inline result. If the API is hosted elsewhere, change `data-api-url` on the contact form in `contact.html` and add that frontend's exact origin to `CORS_ALLOWED_ORIGINS`.
++Visit http://localhost:8000 for the public site. The contact form posts to the backend and shows an inline result. If the API is hosted elsewhere, set `CLARIGENCE_API_BASE_URL` (or `CLARIGENCE_API_URL` ending in `/api/contact`) in the frontend build environment and add that frontend's exact origin to `CORS_ALLOWED_ORIGINS`.
+ 
+ ## Build and test
+ 
+@@ -204,29 +204,29 @@
+ ```
+ 
+ Integration tests use a temporary H2 database and exercise contact submission, validation and CORS, plus admin login, authorization, CSRF, dashboard listing/filtering, details, status changes, deletion, and logout. They do not use MySQL credentials or add test records to your MySQL database.
+-## Enquiry email notifications
+-
+-### Resend HTTPS on Railway Trial / Hobby
+-
+-Verify the sender domain in Resend and create a Sending access API key restricted
+-to that domain. Keep existing mailbox MX records. Set these private backend
+-variables, then deploy the updated backend code:
+-
+-```text
+-ENQUIRY_EMAIL_ENABLED=true
+-ENQUIRY_EMAIL_PROVIDER=resend
+-RESEND_API_KEY=<private Resend API key>
+-ENQUIRY_EMAIL_FROM=enquiries@clarigence.in
+-ENQUIRY_EMAIL_TO=hello@clarigence.in
+-```
+-
+-The From domain must be the actual verified Resend domain. If you verified
+-`notify.clarigence.in`, use `enquiries@notify.clarigence.in` instead.
+-No SMTP credentials are needed for Resend. Delivery uses HTTPS after the enquiry
+-commits, with the visitor as Reply-To. Failures leave the enquiry saved and log
+-only a safe diagnostic; check Resend delivery logs for the detailed reason.
+-
+-### SMTP on hosts that allow it
++## Enquiry email notifications
++
++### Resend HTTPS on Railway Trial / Hobby
++
++Verify the sender domain in Resend and create a Sending access API key restricted
++to that domain. Keep existing mailbox MX records. Set these private backend
++variables, then deploy the updated backend code:
++
++```text
++ENQUIRY_EMAIL_ENABLED=true
++ENQUIRY_EMAIL_PROVIDER=resend
++RESEND_API_KEY=<private Resend API key>
++ENQUIRY_EMAIL_FROM=enquiries@clarigence.in
++ENQUIRY_EMAIL_TO=hello@clarigence.in
++```
++
++The From domain must be the actual verified Resend domain. If you verified
++`notify.clarigence.in`, use `enquiries@notify.clarigence.in` instead.
++No SMTP credentials are needed for Resend. Delivery uses HTTPS after the enquiry
++commits, with the visitor as Reply-To. Failures leave the enquiry saved and log
++only a safe diagnostic; check Resend delivery logs for the detailed reason.
++
++### SMTP on hosts that allow it
+ 
+ Enquiries are always saved in the admin portal. To also send notifications to
+ `hello@clarigence.in`, configure these environment variables on the backend host:
+@@ -259,7 +259,7 @@
+ request finishes, with SMTP timeouts configured as recommended by Spring Boot:
+ https://docs.spring.io/spring-boot/reference/io/email.html
+ Email failures are logged using the enquiry ID, while the form still returns
+-success and the enquiry stays saved. There is currently no automatic email retry.
++success and the enquiry stays saved. The admin enquiry details show delivery state and a manual retry button. There is no automatic email retry.
+ Notifications are disabled by default until SMTP is configured.
+ 
+ ### Production email troubleshooting
+@@ -295,3 +295,28 @@
+ https://docs.railway.com/networking/outbound-networking
+ An upgrade requires a backend redeployment. If SMTP is blocked, credentials or
+ longer timeouts cannot fix it. Confirm the host/plan before changing the transport.
++
++
++## Enquiry reliability update (21 October 2026)
++
++See `ENQUIRY-DEPLOYMENT.md` in the website root for current outage findings,
++non-destructive migration, replacement hosting choices and the release checklist.
++
++- Public submissions may include an `Idempotency-Key` UUID header. The frontend
++  reuses it when retrying unchanged details in the same page. MySQL enforces a
++  unique nullable `contacts.submission_key`; legacy records remain valid.
++- `IN_PROGRESS` is added without removing historical `CONVERTED` values.
++- Delivery state (`NOT_ATTEMPTED`, `DISABLED`, `FAILED`, `SENT`), safe failure
++  diagnostics and last-attempt time appear in authenticated enquiry details.
++- `POST /api/admin/enquiries/{id}/notification/retry` uses the existing admin
++  session and CSRF token. Sent messages are not resent. Concurrent retries are
++  serialized by a database row lock. SMTP acceptance is not proof of inbox delivery.
++- New email attempts run after the enquiry commit, in a separate transaction.
++  Failure to send or update notification state cannot undo the saved enquiry or
++  turn its successful submission into an error. An interrupted attempt can be
++  retried manually. A crash after provider acceptance but before recording SENT
++  can result in a duplicate notification on retry; enquiry records are unaffected.
++- Notifications disabled on the host are recorded as DISABLED and can be retried
++  after configuring and enabling the existing SMTP or Resend provider.
++- The frontend never clears details on errors, stores enquiries in localStorage,
++  or declares success without HTTP 201 and a positive integer saved-record ID.
+--- a/backend/src/main/resources/application.properties
++++ b/backend/src/main/resources/application.properties
+@@ -22,9 +22,9 @@
+ server.error.include-binding-errors=never
+ 
+ # Enable only after configuring SMTP credentials on the backend host.
+-clarigence.enquiry-email.enabled=${ENQUIRY_EMAIL_ENABLED:false}
+-clarigence.enquiry-email.provider=${ENQUIRY_EMAIL_PROVIDER:smtp}
+-clarigence.enquiry-email.resend-api-key=${RESEND_API_KEY:}
++clarigence.enquiry-email.enabled=${ENQUIRY_EMAIL_ENABLED:false}
++clarigence.enquiry-email.provider=${ENQUIRY_EMAIL_PROVIDER:smtp}
++clarigence.enquiry-email.resend-api-key=${RESEND_API_KEY:}
+ clarigence.enquiry-email.to=${ENQUIRY_EMAIL_TO:hello@clarigence.in}
+ clarigence.enquiry-email.from=${ENQUIRY_EMAIL_FROM:${SMTP_USERNAME:}}
+ spring.mail.host=${SMTP_HOST:smtp.gmail.com}
+@@ -37,3 +37,7 @@
+ spring.mail.properties.mail.smtp.connectiontimeout=3000
+ spring.mail.properties.mail.smtp.timeout=3000
+ spring.mail.properties.mail.smtp.writetimeout=3000
++
++# Bound pool acquisition during database outages; failed saves return HTTP 503.
++spring.datasource.hikari.connection-timeout=${DB_CONNECTION_TIMEOUT_MS:5000}
++spring.datasource.hikari.validation-timeout=3000
+--- a/backend/src/main/java/in/clarigence/contactapi/config/CorsConfig.java
++++ b/backend/src/main/java/in/clarigence/contactapi/config/CorsConfig.java
+@@ -1,30 +1,30 @@
+-package in.clarigence.contactapi.config;
+-
+-import java.util.Arrays;
+-import java.util.List;
+-import org.springframework.beans.factory.annotation.Value;
+-import org.springframework.context.annotation.Configuration;
+-import org.springframework.web.servlet.config.annotation.CorsRegistry;
+-import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
+-
+-@Configuration
+-public class CorsConfig implements WebMvcConfigurer {
+-
+-    private final List<String> allowedOrigins;
+-
+-    public CorsConfig(@Value("${CORS_ALLOWED_ORIGINS:http://localhost:8000,http://127.0.0.1:8000}") String origins) {
+-        this.allowedOrigins = Arrays.stream(origins.split(","))
+-                .map(String::trim)
+-                .filter(origin -> !origin.isEmpty())
+-                .toList();
+-    }
+-
+-    @Override
+-    public void addCorsMappings(CorsRegistry registry) {
+-        registry.addMapping("/api/**")
+-                .allowedOrigins(allowedOrigins.toArray(String[]::new))
+-                .allowedMethods("GET", "POST", "OPTIONS")
+-                .allowedHeaders("Content-Type", "Accept")
+-                .maxAge(3600);
+-    }
+-}
++package in.clarigence.contactapi.config;
++
++import java.util.Arrays;
++import java.util.List;
++import org.springframework.beans.factory.annotation.Value;
++import org.springframework.context.annotation.Configuration;
++import org.springframework.web.servlet.config.annotation.CorsRegistry;
++import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
++
++@Configuration
++public class CorsConfig implements WebMvcConfigurer {
++
++    private final List<String> allowedOrigins;
++
++    public CorsConfig(@Value("${CORS_ALLOWED_ORIGINS:http://localhost:8000,http://127.0.0.1:8000}") String origins) {
++        this.allowedOrigins = Arrays.stream(origins.split(","))
++                .map(String::trim)
++                .filter(origin -> !origin.isEmpty())
++                .toList();
++    }
++
++    @Override
++    public void addCorsMappings(CorsRegistry registry) {
++        registry.addMapping("/api/**")
++                .allowedOrigins(allowedOrigins.toArray(String[]::new))
++                .allowedMethods("GET", "POST", "OPTIONS")
++                .allowedHeaders("Content-Type", "Accept", "Idempotency-Key")
++                .maxAge(3600);
++    }
++}
+--- a/backend/src/main/java/in/clarigence/contactapi/controller/AdminEnquiryController.java
++++ b/backend/src/main/java/in/clarigence/contactapi/controller/AdminEnquiryController.java
+@@ -1,65 +1,72 @@
+-package in.clarigence.contactapi.controller;
+-
+-import in.clarigence.contactapi.dto.ContactStatusRequest;
+-import in.clarigence.contactapi.dto.DashboardSummary;
+-import in.clarigence.contactapi.dto.EnquiryDetails;
+-import in.clarigence.contactapi.dto.EnquiryPage;
+-import in.clarigence.contactapi.entity.ContactStatus;
+-import in.clarigence.contactapi.service.AdminEnquiryService;
+-import jakarta.validation.Valid;
+-import jakarta.validation.constraints.Max;
+-import jakarta.validation.constraints.Min;
+-import org.springframework.http.HttpStatus;
+-import org.springframework.validation.annotation.Validated;
+-import org.springframework.web.bind.annotation.DeleteMapping;
+-import org.springframework.web.bind.annotation.GetMapping;
+-import org.springframework.web.bind.annotation.PathVariable;
+-import org.springframework.web.bind.annotation.PutMapping;
+-import org.springframework.web.bind.annotation.RequestBody;
+-import org.springframework.web.bind.annotation.RequestMapping;
+-import org.springframework.web.bind.annotation.RequestParam;
+-import org.springframework.web.bind.annotation.ResponseStatus;
+-import org.springframework.web.bind.annotation.RestController;
+-
+-@RestController
+-@RequestMapping("/api/admin")
+-@Validated
+-public class AdminEnquiryController {
+-
+-    private final AdminEnquiryService adminEnquiryService;
+-
+-    public AdminEnquiryController(AdminEnquiryService adminEnquiryService) {
+-        this.adminEnquiryService = adminEnquiryService;
+-    }
+-
+-    @GetMapping("/dashboard")
+-    public DashboardSummary dashboard() {
+-        return adminEnquiryService.dashboard();
+-    }
+-
+-    @GetMapping("/enquiries")
+-    public EnquiryPage enquiries(
+-            @RequestParam(required = false) String query,
+-            @RequestParam(required = false) ContactStatus status,
+-            @RequestParam(defaultValue = "0") @Min(0) int page,
+-            @RequestParam(defaultValue = "20") @Min(1) @Max(100) int size) {
+-        return adminEnquiryService.search(query, status, page, size);
+-    }
+-
+-    @GetMapping("/enquiries/{id}")
+-    public EnquiryDetails enquiry(@PathVariable @Min(1) Long id) {
+-        return adminEnquiryService.get(id);
+-    }
+-
+-    @PutMapping("/enquiries/{id}/status")
+-    public EnquiryDetails updateStatus(@PathVariable @Min(1) Long id,
+-                                       @Valid @RequestBody ContactStatusRequest request) {
+-        return adminEnquiryService.updateStatus(id, request.status());
+-    }
+-
+-    @DeleteMapping("/enquiries/{id}")
+-    @ResponseStatus(HttpStatus.NO_CONTENT)
+-    public void delete(@PathVariable @Min(1) Long id) {
+-        adminEnquiryService.delete(id);
+-    }
+-}
++package in.clarigence.contactapi.controller;
++
++import in.clarigence.contactapi.dto.ContactStatusRequest;
++import in.clarigence.contactapi.dto.DashboardSummary;
++import in.clarigence.contactapi.dto.EnquiryDetails;
++import in.clarigence.contactapi.dto.EnquiryPage;
++import in.clarigence.contactapi.entity.ContactStatus;
++import in.clarigence.contactapi.service.AdminEnquiryService;
++import jakarta.validation.Valid;
++import jakarta.validation.constraints.Max;
++import jakarta.validation.constraints.Min;
++import org.springframework.http.HttpStatus;
++import org.springframework.validation.annotation.Validated;
++import org.springframework.web.bind.annotation.DeleteMapping;
++import org.springframework.web.bind.annotation.GetMapping;
++import org.springframework.web.bind.annotation.PathVariable;
++import org.springframework.web.bind.annotation.PutMapping;
++import org.springframework.web.bind.annotation.RequestBody;
++import org.springframework.web.bind.annotation.RequestMapping;
++import org.springframework.web.bind.annotation.RequestParam;
++import org.springframework.web.bind.annotation.ResponseStatus;
++import org.springframework.web.bind.annotation.RestController;
++
++@RestController
++@RequestMapping("/api/admin")
++@Validated
++public class AdminEnquiryController {
++
++    private final AdminEnquiryService adminEnquiryService;
++    private final in.clarigence.contactapi.service.NotificationDeliveryService delivery;
++
++    public AdminEnquiryController(AdminEnquiryService adminEnquiryService, in.clarigence.contactapi.service.NotificationDeliveryService delivery) {
++        this.adminEnquiryService = adminEnquiryService;
++        this.delivery = delivery;
++    }
++
++    @GetMapping("/dashboard")
++    public DashboardSummary dashboard() {
++        return adminEnquiryService.dashboard();
++    }
++
++    @GetMapping("/enquiries")
++    public EnquiryPage enquiries(
++            @RequestParam(required = false) String query,
++            @RequestParam(required = false) ContactStatus status,
++            @RequestParam(defaultValue = "0") @Min(0) int page,
++            @RequestParam(defaultValue = "20") @Min(1) @Max(100) int size) {
++        return adminEnquiryService.search(query, status, page, size);
++    }
++
++    @GetMapping("/enquiries/{id}")
++    public EnquiryDetails enquiry(@PathVariable @Min(1) Long id) {
++        return adminEnquiryService.get(id);
++    }
++
++    @PutMapping("/enquiries/{id}/status")
++    public EnquiryDetails updateStatus(@PathVariable @Min(1) Long id,
++                                       @Valid @RequestBody ContactStatusRequest request) {
++        return adminEnquiryService.updateStatus(id, request.status());
++    }
++
++    @org.springframework.web.bind.annotation.PostMapping("/enquiries/{id}/notification/retry")
++    public EnquiryDetails retryNotification(@PathVariable @Min(1) Long id) {
++        return delivery.deliver(id);
++    }
++
++    @DeleteMapping("/enquiries/{id}")
++    @ResponseStatus(HttpStatus.NO_CONTENT)
++    public void delete(@PathVariable @Min(1) Long id) {
++        adminEnquiryService.delete(id);
++    }
++}
+--- a/backend/src/main/java/in/clarigence/contactapi/controller/ContactController.java
++++ b/backend/src/main/java/in/clarigence/contactapi/controller/ContactController.java
+@@ -1,29 +1,30 @@
+-package in.clarigence.contactapi.controller;
+-
+-import in.clarigence.contactapi.dto.ContactRequest;
+-import in.clarigence.contactapi.dto.ContactResponse;
+-import in.clarigence.contactapi.service.ContactService;
+-import jakarta.validation.Valid;
+-import org.springframework.http.HttpStatus;
+-import org.springframework.http.MediaType;
+-import org.springframework.http.ResponseEntity;
+-import org.springframework.web.bind.annotation.PostMapping;
+-import org.springframework.web.bind.annotation.RequestBody;
+-import org.springframework.web.bind.annotation.RequestMapping;
+-import org.springframework.web.bind.annotation.RestController;
+-
+-@RestController
+-@RequestMapping("/api/contact")
+-public class ContactController {
+-
+-    private final ContactService contactService;
+-
+-    public ContactController(ContactService contactService) {
+-        this.contactService = contactService;
+-    }
+-
+-    @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+-    public ResponseEntity<ContactResponse> createContact(@Valid @RequestBody ContactRequest request) {
+-        return ResponseEntity.status(HttpStatus.CREATED).body(contactService.create(request));
+-    }
+-}
++package in.clarigence.contactapi.controller;
++
++import in.clarigence.contactapi.dto.ContactRequest;
++import in.clarigence.contactapi.dto.ContactResponse;
++import in.clarigence.contactapi.service.ContactSubmissionService;
++import jakarta.validation.Valid;
++import org.springframework.http.HttpStatus;
++import org.springframework.http.MediaType;
++import org.springframework.http.ResponseEntity;
++import org.springframework.web.bind.annotation.PostMapping;
++import org.springframework.web.bind.annotation.RequestBody;
++import org.springframework.web.bind.annotation.RequestMapping;
++import org.springframework.web.bind.annotation.RestController;
++
++@RestController
++@RequestMapping("/api/contact")
++public class ContactController {
++
++    private final ContactSubmissionService contactService;
++
++    public ContactController(ContactSubmissionService contactService) {
++        this.contactService = contactService;
++    }
++
++    @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
++    public ResponseEntity<ContactResponse> createContact(@Valid @RequestBody ContactRequest request,
++            @org.springframework.web.bind.annotation.RequestHeader(value = "Idempotency-Key", required = false) String key) {
++        return ResponseEntity.status(HttpStatus.CREATED).body(contactService.submit(request, key));
++    }
++}
+--- a/backend/src/main/java/in/clarigence/contactapi/dto/ContactRequest.java
++++ b/backend/src/main/java/in/clarigence/contactapi/dto/ContactRequest.java
+@@ -1,32 +1,44 @@
+-package in.clarigence.contactapi.dto;
+-
+-import jakarta.validation.constraints.Email;
+-import jakarta.validation.constraints.NotBlank;
+-import jakarta.validation.constraints.Pattern;
+-import jakarta.validation.constraints.Size;
+-
+-public record ContactRequest(
+-        @NotBlank(message = "Name is required.")
+-        @Size(max = 120, message = "Name must be 120 characters or fewer.")
+-        String name,
+-
+-        @NotBlank(message = "Email is required.")
+-        @Email(message = "Enter a valid email address.")
+-        @Size(max = 254, message = "Email must be 254 characters or fewer.")
+-        String email,
+-
+-        @Pattern(regexp = "^$|^[+0-9() .-]{7,30}$", message = "Enter a valid phone number.")
+-        String phone,
+-
+-        @Size(max = 160, message = "Company must be 160 characters or fewer.")
+-        String company,
+-
+-        @NotBlank(message = "Please select a service.")
+-        @Size(max = 120, message = "Service must be 120 characters or fewer.")
+-        String service,
+-
+-        @NotBlank(message = "Message is required.")
+-        @Size(min = 10, max = 5000, message = "Message must be between 10 and 5000 characters.")
+-        String message
+-) {
+-}
++package in.clarigence.contactapi.dto;
++
++import jakarta.validation.constraints.Email;
++import jakarta.validation.constraints.NotBlank;
++import jakarta.validation.constraints.Pattern;
++import jakarta.validation.constraints.Size;
++
++public record ContactRequest(
++        @NotBlank(message = "Name is required.")
++        @Size(max = 120, message = "Name must be 120 characters or fewer.")
++        String name,
++
++        @NotBlank(message = "Email is required.")
++        @Email(message = "Enter a valid email address.")
++        @Size(max = 254, message = "Email must be 254 characters or fewer.")
++        String email,
++
++        @Pattern(regexp = "^$|^[+0-9() .-]{7,30}$", message = "Enter a valid phone number.")
++        String phone,
++
++        @Size(max = 160, message = "Company must be 160 characters or fewer.")
++        String company,
++
++        @NotBlank(message = "Please select a service.")
++        @Size(max = 120, message = "Service must be 120 characters or fewer.")
++        String service,
++
++        @NotBlank(message = "Message is required.")
++        @Size(min = 10, max = 5000, message = "Message must be between 10 and 5000 characters.")
++        String message
++) {
++    public ContactRequest {
++        name = trim(name);
++        email = trim(email);
++        phone = trim(phone);
++        company = trim(company);
++        service = trim(service);
++        message = trim(message);
++    }
++
++    private static String trim(String value) {
++        return value == null ? null : value.trim();
++    }
++}
+--- a/backend/src/main/java/in/clarigence/contactapi/dto/EnquiryDetails.java
++++ b/backend/src/main/java/in/clarigence/contactapi/dto/EnquiryDetails.java
+@@ -1,23 +1,26 @@
+-package in.clarigence.contactapi.dto;
+-
+-import in.clarigence.contactapi.entity.Contact;
+-import in.clarigence.contactapi.entity.ContactStatus;
+-import java.time.Instant;
+-
+-public record EnquiryDetails(
+-        Long id,
+-        String name,
+-        String email,
+-        String phone,
+-        String company,
+-        String service,
+-        String message,
+-        ContactStatus status,
+-        Instant createdAt
+-) {
+-    public static EnquiryDetails from(Contact contact) {
+-        return new EnquiryDetails(contact.getId(), contact.getName(), contact.getEmail(), contact.getPhone(),
+-                contact.getCompany(), contact.getService(), contact.getMessage(), contact.getStatus(),
+-                contact.getCreatedAt());
+-    }
+-}
++package in.clarigence.contactapi.dto;
++
++import in.clarigence.contactapi.entity.Contact;
++import in.clarigence.contactapi.entity.ContactStatus;
++import java.time.Instant;
++
++public record EnquiryDetails(
++        Long id,
++        String name,
++        String email,
++        String phone,
++        String company,
++        String service,
++        String message,
++        ContactStatus status,
++        Instant createdAt,
++        String notificationStatus,
++        Instant notificationAttemptedAt,
++        String notificationError
++) {
++    public static EnquiryDetails from(Contact contact) {
++        return new EnquiryDetails(contact.getId(), contact.getName(), contact.getEmail(), contact.getPhone(),
++                contact.getCompany(), contact.getService(), contact.getMessage(), contact.getStatus(),
++                contact.getCreatedAt(), contact.getNotificationStatus(), contact.getNotificationAttemptedAt(), contact.getNotificationError());
++    }
++}
+--- a/backend/src/main/java/in/clarigence/contactapi/entity/Contact.java
++++ b/backend/src/main/java/in/clarigence/contactapi/entity/Contact.java
+@@ -1,80 +1,103 @@
+-package in.clarigence.contactapi.entity;
+-
+-import jakarta.persistence.Column;
+-import jakarta.persistence.Entity;
+-import jakarta.persistence.GeneratedValue;
+-import jakarta.persistence.GenerationType;
+-import jakarta.persistence.Id;
+-import jakarta.persistence.PrePersist;
+-import jakarta.persistence.Table;
+-import jakarta.persistence.Index;
+-import java.time.Instant;
+-import jakarta.persistence.EnumType;
+-import jakarta.persistence.Enumerated;
+-
+-@Entity
+-@Table(name = "contacts", indexes = @Index(name = "idx_contacts_status_created", columnList = "status, created_at"))
+-public class Contact {
+-
+-    @Id
+-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+-    private Long id;
+-
+-    @Column(nullable = false, length = 120)
+-    private String name;
+-
+-    @Column(nullable = false, length = 254)
+-    private String email;
+-
+-    @Column(length = 30)
+-    private String phone;
+-
+-    @Column(length = 160)
+-    private String company;
+-
+-    @Column(name = "service_required", nullable = false, length = 120)
+-    private String service;
+-
+-    @Column(nullable = false, length = 5000)
+-    private String message;
+-
+-    @Enumerated(EnumType.STRING)
+-    @Column(nullable = false, length = 20, columnDefinition = "varchar(20) default 'NEW'")
+-    private ContactStatus status = ContactStatus.NEW;
+-
+-    @Column(name = "created_at", nullable = false, updatable = false)
+-    private Instant createdAt;
+-
+-    protected Contact() {
+-    }
+-
+-    public Contact(String name, String email, String phone, String company, String service, String message) {
+-        this.name = name;
+-        this.email = email;
+-        this.phone = phone;
+-        this.company = company;
+-        this.service = service;
+-        this.message = message;
+-    }
+-
+-    @PrePersist
+-    void assignCreatedAt() {
+-        if (createdAt == null) {
+-            createdAt = Instant.now();
+-        }
+-    }
+-
+-    public Long getId() { return id; }
+-    public String getName() { return name; }
+-    public String getEmail() { return email; }
+-    public String getPhone() { return phone; }
+-    public String getCompany() { return company; }
+-    public String getService() { return service; }
+-    public String getMessage() { return message; }
+-    public ContactStatus getStatus() { return status; }
+-    public Instant getCreatedAt() { return createdAt; }
+-
+-    public void setStatus(ContactStatus status) {
+-        this.status = status;
+-    }
+-}
++package in.clarigence.contactapi.entity;
++
++import jakarta.persistence.Column;
++import jakarta.persistence.Entity;
++import jakarta.persistence.GeneratedValue;
++import jakarta.persistence.GenerationType;
++import jakarta.persistence.Id;
++import jakarta.persistence.PrePersist;
++import jakarta.persistence.Table;
++import jakarta.persistence.Index;
++import java.time.Instant;
++import jakarta.persistence.EnumType;
++import jakarta.persistence.Enumerated;
++
++@Entity
++@Table(name = "contacts", indexes = @Index(name = "idx_contacts_status_created", columnList = "status, created_at"))
++public class Contact {
++
++    @Id
++    @GeneratedValue(strategy = GenerationType.IDENTITY)
++    private Long id;
++
++    @Column(nullable = false, length = 120)
++    private String name;
++
++    @Column(nullable = false, length = 254)
++    private String email;
++
++    @Column(length = 30)
++    private String phone;
++
++    @Column(length = 160)
++    private String company;
++
++    @Column(name = "service_required", nullable = false, length = 120)
++    private String service;
++
++    @Column(nullable = false, length = 5000)
++    private String message;
++
++    @Enumerated(EnumType.STRING)
++    @Column(nullable = false, length = 20, columnDefinition = "varchar(20) default 'NEW'")
++    private ContactStatus status = ContactStatus.NEW;
++
++    @Column(name = "created_at", nullable = false, updatable = false)
++    private Instant createdAt;
++
++    @Column(name = "submission_key", length = 36, unique = true)
++    private String submissionKey;
++
++    @Column(name = "notification_status", length = 20)
++    private String notificationStatus;
++
++    @Column(name = "notification_attempted_at")
++    private Instant notificationAttemptedAt;
++
++    @Column(name = "notification_error", length = 500)
++    private String notificationError;
++
++    public String getSubmissionKey() { return submissionKey; }
++    public void setSubmissionKey(String key) { submissionKey = key; }
++    public String getNotificationStatus() { return notificationStatus == null ? "NOT_ATTEMPTED" : notificationStatus; }
++    public Instant getNotificationAttemptedAt() { return notificationAttemptedAt; }
++    public String getNotificationError() { return notificationError; }
++    public void recordNotification(String status, String error) {
++        notificationStatus = status;
++        notificationAttemptedAt = Instant.now();
++        notificationError = error;
++    }
++
++    protected Contact() {
++    }
++
++    public Contact(String name, String email, String phone, String company, String service, String message) {
++        this.name = name;
++        this.email = email;
++        this.phone = phone;
++        this.company = company;
++        this.service = service;
++        this.message = message;
++    }
++
++    @PrePersist
++    void assignCreatedAt() {
++        if (createdAt == null) {
++            createdAt = Instant.now();
++        }
++    }
++
++    public Long getId() { return id; }
++    public String getName() { return name; }
++    public String getEmail() { return email; }
++    public String getPhone() { return phone; }
++    public String getCompany() { return company; }
++    public String getService() { return service; }
++    public String getMessage() { return message; }
++    public ContactStatus getStatus() { return status; }
++    public Instant getCreatedAt() { return createdAt; }
++
++    public void setStatus(ContactStatus status) {
++        this.status = status;
++    }
++}
+--- a/backend/src/main/java/in/clarigence/contactapi/entity/ContactStatus.java
++++ b/backend/src/main/java/in/clarigence/contactapi/entity/ContactStatus.java
+@@ -1,8 +1,9 @@
+-package in.clarigence.contactapi.entity;
+-
+-public enum ContactStatus {
+-    NEW,
+-    CONTACTED,
+-    CONVERTED,
+-    CLOSED
+-}
++package in.clarigence.contactapi.entity;
++
++public enum ContactStatus {
++    NEW,
++    CONTACTED,
++    IN_PROGRESS,
++    CONVERTED,
++    CLOSED
++}
+--- a/backend/src/main/java/in/clarigence/contactapi/exception/ApiExceptionHandler.java
++++ b/backend/src/main/java/in/clarigence/contactapi/exception/ApiExceptionHandler.java
+@@ -1,110 +1,121 @@
+-package in.clarigence.contactapi.exception;
+-
+-import in.clarigence.contactapi.dto.ApiErrorResponse;
+-import in.clarigence.contactapi.exception.InvalidCredentialsException;
+-import in.clarigence.contactapi.exception.ResourceNotFoundException;
+-import jakarta.servlet.http.HttpServletRequest;
+-import java.time.Instant;
+-import java.util.Map;
+-import java.util.TreeMap;
+-import jakarta.validation.ConstraintViolationException;
+-import org.slf4j.Logger;
+-import org.slf4j.LoggerFactory;
+-import org.springframework.http.HttpStatus;
+-import org.springframework.http.ResponseEntity;
+-import org.springframework.http.converter.HttpMessageNotReadableException;
+-import org.springframework.validation.FieldError;
+-import org.springframework.web.bind.MethodArgumentNotValidException;
+-import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+-import org.springframework.web.servlet.resource.NoResourceFoundException;
+-import org.springframework.web.bind.annotation.ExceptionHandler;
+-import org.springframework.web.bind.annotation.RestControllerAdvice;
+-
+-@RestControllerAdvice
+-public class ApiExceptionHandler {
+-
+-    private static final Logger log = LoggerFactory.getLogger(ApiExceptionHandler.class);
+-
+-    @ExceptionHandler(org.springframework.web.multipart.MaxUploadSizeExceededException.class)
+-    public ResponseEntity<ApiErrorResponse> handleUploadSize(Exception error,HttpServletRequest request){
+-        return response(HttpStatus.PAYLOAD_TOO_LARGE,"Choose a photo up to 5 MB.",request,Map.of("photo","Choose a photo up to 5 MB."));
+-    }
+-
+-    @ExceptionHandler(CmsValidationException.class)
+-    public ResponseEntity<ApiErrorResponse> handleCmsValidation(CmsValidationException error,HttpServletRequest request){
+-        return response(HttpStatus.BAD_REQUEST,error.getMessage(),request,error.getFields());
+-    }
+-
+-    @ExceptionHandler({CmsConflictException.class,org.springframework.orm.ObjectOptimisticLockingFailureException.class})
+-    public ResponseEntity<ApiErrorResponse> handleCmsConflict(Exception error,HttpServletRequest request){
+-        return response(HttpStatus.CONFLICT,"This content changed in another session. Reload it before saving.",request,Map.of());
+-    }
+-
+-    @ExceptionHandler(org.springframework.dao.DataIntegrityViolationException.class)
+-    public ResponseEntity<ApiErrorResponse> handleDuplicate(Exception error,HttpServletRequest request){
+-        return response(HttpStatus.CONFLICT,"The content conflicts with an existing record. Check the slug and reload.",request,Map.of());
+-    }
+-
+-    @ExceptionHandler(MethodArgumentNotValidException.class)
+-    public ResponseEntity<ApiErrorResponse> handleValidation(
+-            MethodArgumentNotValidException exception, HttpServletRequest request) {
+-        Map<String, String> fieldErrors = new TreeMap<>();
+-        for (FieldError fieldError : exception.getBindingResult().getFieldErrors()) {
+-            fieldErrors.putIfAbsent(fieldError.getField(), fieldError.getDefaultMessage());
+-        }
+-        return response(HttpStatus.BAD_REQUEST, "Please check the submitted fields.", request, fieldErrors);
+-    }
+-
+-    @ExceptionHandler(HttpMessageNotReadableException.class)
+-    public ResponseEntity<ApiErrorResponse> handleUnreadableBody(
+-            HttpMessageNotReadableException exception, HttpServletRequest request) {
+-        return response(HttpStatus.BAD_REQUEST, "Request body must be valid JSON.", request, Map.of());
+-    }
+-
+-    @ExceptionHandler(InvalidCredentialsException.class)
+-    public ResponseEntity<ApiErrorResponse> handleInvalidCredentials(
+-            InvalidCredentialsException exception, HttpServletRequest request) {
+-        return response(HttpStatus.UNAUTHORIZED, exception.getMessage(), request, Map.of());
+-    }
+-
+-    @ExceptionHandler(ResourceNotFoundException.class)
+-    public ResponseEntity<ApiErrorResponse> handleNotFound(
+-            ResourceNotFoundException exception, HttpServletRequest request) {
+-        return response(HttpStatus.NOT_FOUND, exception.getMessage(), request, Map.of());
+-    }
+-
+-    @ExceptionHandler(NoResourceFoundException.class)
+-    public ResponseEntity<ApiErrorResponse> handleStaticResourceNotFound(
+-            NoResourceFoundException exception, HttpServletRequest request) {
+-        return response(HttpStatus.NOT_FOUND, "The requested resource was not found.", request, Map.of());
+-    }
+-
+-    @ExceptionHandler({ConstraintViolationException.class, MethodArgumentTypeMismatchException.class})
+-    public ResponseEntity<ApiErrorResponse> handleBadParameters(
+-            Exception exception, HttpServletRequest request) {
+-        return response(HttpStatus.BAD_REQUEST, "One or more request parameters are invalid.", request, Map.of());
+-    }
+-
+-    @ExceptionHandler(ContactPersistenceException.class)
+-    public ResponseEntity<ApiErrorResponse> handlePersistence(
+-            ContactPersistenceException exception, HttpServletRequest request) {
+-        log.error("Could not persist contact enquiry", exception);
+-        return response(HttpStatus.SERVICE_UNAVAILABLE,
+-                "We could not save your enquiry right now. Please try again shortly.", request, Map.of());
+-    }
+-
+-    @ExceptionHandler(Exception.class)
+-    public ResponseEntity<ApiErrorResponse> handleUnexpected(
+-            Exception exception, HttpServletRequest request) {
+-        log.error("Unexpected error while processing request {}", request.getRequestURI(), exception);
+-        return response(HttpStatus.INTERNAL_SERVER_ERROR,
+-                "Something went wrong. Please try again later.", request, Map.of());
+-    }
+-
+-    private ResponseEntity<ApiErrorResponse> response(
+-            HttpStatus status, String message, HttpServletRequest request, Map<String, String> fieldErrors) {
+-        ApiErrorResponse body = new ApiErrorResponse(
+-                Instant.now(), status.value(), status.getReasonPhrase(), message, request.getRequestURI(), fieldErrors);
+-        return ResponseEntity.status(status).body(body);
+-    }
+-}
++package in.clarigence.contactapi.exception;
++
++import in.clarigence.contactapi.dto.ApiErrorResponse;
++import in.clarigence.contactapi.exception.InvalidCredentialsException;
++import in.clarigence.contactapi.exception.ResourceNotFoundException;
++import jakarta.servlet.http.HttpServletRequest;
++import java.time.Instant;
++import java.util.Map;
++import java.util.TreeMap;
++import jakarta.validation.ConstraintViolationException;
++import org.slf4j.Logger;
++import org.slf4j.LoggerFactory;
++import org.springframework.http.HttpStatus;
++import org.springframework.http.ResponseEntity;
++import org.springframework.http.converter.HttpMessageNotReadableException;
++import org.springframework.validation.FieldError;
++import org.springframework.web.bind.MethodArgumentNotValidException;
++import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
++import org.springframework.web.servlet.resource.NoResourceFoundException;
++import org.springframework.web.bind.annotation.ExceptionHandler;
++import org.springframework.web.bind.annotation.RestControllerAdvice;
++
++@RestControllerAdvice
++public class ApiExceptionHandler {
++
++    private static final Logger log = LoggerFactory.getLogger(ApiExceptionHandler.class);
++
++    @ExceptionHandler(org.springframework.web.multipart.MaxUploadSizeExceededException.class)
++    public ResponseEntity<ApiErrorResponse> handleUploadSize(Exception error,HttpServletRequest request){
++        return response(HttpStatus.PAYLOAD_TOO_LARGE,"Choose a photo up to 5 MB.",request,Map.of("photo","Choose a photo up to 5 MB."));
++    }
++
++    @ExceptionHandler(CmsValidationException.class)
++    public ResponseEntity<ApiErrorResponse> handleCmsValidation(CmsValidationException error,HttpServletRequest request){
++        return response(HttpStatus.BAD_REQUEST,error.getMessage(),request,error.getFields());
++    }
++
++    @ExceptionHandler({CmsConflictException.class,org.springframework.orm.ObjectOptimisticLockingFailureException.class})
++    public ResponseEntity<ApiErrorResponse> handleCmsConflict(Exception error,HttpServletRequest request){
++        return response(HttpStatus.CONFLICT,"This content changed in another session. Reload it before saving.",request,Map.of());
++    }
++
++    @ExceptionHandler(org.springframework.dao.DataIntegrityViolationException.class)
++    public ResponseEntity<ApiErrorResponse> handleDuplicate(Exception error,HttpServletRequest request){
++        return response(HttpStatus.CONFLICT,"The content conflicts with an existing record. Check the slug and reload.",request,Map.of());
++    }
++
++    @ExceptionHandler(MethodArgumentNotValidException.class)
++    public ResponseEntity<ApiErrorResponse> handleValidation(
++            MethodArgumentNotValidException exception, HttpServletRequest request) {
++        Map<String, String> fieldErrors = new TreeMap<>();
++        for (FieldError fieldError : exception.getBindingResult().getFieldErrors()) {
++            fieldErrors.putIfAbsent(fieldError.getField(), fieldError.getDefaultMessage());
++        }
++        return response(HttpStatus.BAD_REQUEST, "Please check the submitted fields.", request, fieldErrors);
++    }
++
++    @ExceptionHandler(HttpMessageNotReadableException.class)
++    public ResponseEntity<ApiErrorResponse> handleUnreadableBody(
++            HttpMessageNotReadableException exception, HttpServletRequest request) {
++        return response(HttpStatus.BAD_REQUEST, "Request body must be valid JSON.", request, Map.of());
++    }
++
++    @ExceptionHandler(InvalidCredentialsException.class)
++    public ResponseEntity<ApiErrorResponse> handleInvalidCredentials(
++            InvalidCredentialsException exception, HttpServletRequest request) {
++        return response(HttpStatus.UNAUTHORIZED, exception.getMessage(), request, Map.of());
++    }
++
++    @ExceptionHandler(ResourceNotFoundException.class)
++    public ResponseEntity<ApiErrorResponse> handleNotFound(
++            ResourceNotFoundException exception, HttpServletRequest request) {
++        return response(HttpStatus.NOT_FOUND, exception.getMessage(), request, Map.of());
++    }
++
++    @ExceptionHandler(NoResourceFoundException.class)
++    public ResponseEntity<ApiErrorResponse> handleStaticResourceNotFound(
++            NoResourceFoundException exception, HttpServletRequest request) {
++        return response(HttpStatus.NOT_FOUND, "The requested resource was not found.", request, Map.of());
++    }
++
++    @ExceptionHandler({ConstraintViolationException.class, MethodArgumentTypeMismatchException.class})
++    public ResponseEntity<ApiErrorResponse> handleBadParameters(
++            Exception exception, HttpServletRequest request) {
++        return response(HttpStatus.BAD_REQUEST, "One or more request parameters are invalid.", request, Map.of());
++    }
++
++    @ExceptionHandler(ContactPersistenceException.class)
++    public ResponseEntity<ApiErrorResponse> handlePersistence(
++            ContactPersistenceException exception, HttpServletRequest request) {
++        log.error("Could not persist contact enquiry", exception);
++        return response(HttpStatus.SERVICE_UNAVAILABLE,
++                "We could not save your enquiry right now. Please try again shortly.", request, Map.of());
++    }
++
++    @ExceptionHandler(org.springframework.web.server.ResponseStatusException.class)
++    public ResponseEntity<ApiErrorResponse> handleResponseStatus(org.springframework.web.server.ResponseStatusException e, HttpServletRequest request) {
++        return response(HttpStatus.valueOf(e.getStatusCode().value()), e.getReason(), request, Map.of());
++    }
++
++    @ExceptionHandler({org.springframework.dao.DataAccessException.class, org.springframework.transaction.TransactionException.class})
++    public ResponseEntity<ApiErrorResponse> handleDatabaseUnavailable(Exception e, HttpServletRequest request) {
++        log.error("Database operation unavailable: {}", e.getClass().getSimpleName());
++        return response(HttpStatus.SERVICE_UNAVAILABLE, "The database is temporarily unavailable. Please try again shortly.", request, Map.of());
++    }
++
++    @ExceptionHandler(Exception.class)
++    public ResponseEntity<ApiErrorResponse> handleUnexpected(
++            Exception exception, HttpServletRequest request) {
++        log.error("Unexpected error while processing request {}", request.getRequestURI(), exception);
++        return response(HttpStatus.INTERNAL_SERVER_ERROR,
++                "Something went wrong. Please try again later.", request, Map.of());
++    }
++
++    private ResponseEntity<ApiErrorResponse> response(
++            HttpStatus status, String message, HttpServletRequest request, Map<String, String> fieldErrors) {
++        ApiErrorResponse body = new ApiErrorResponse(
++                Instant.now(), status.value(), status.getReasonPhrase(), message, request.getRequestURI(), fieldErrors);
++        return ResponseEntity.status(status).body(body);
++    }
++}
+--- a/backend/src/main/java/in/clarigence/contactapi/repository/ContactRepository.java
++++ b/backend/src/main/java/in/clarigence/contactapi/repository/ContactRepository.java
+@@ -1,35 +1,41 @@
+-package in.clarigence.contactapi.repository;
+-
+-import in.clarigence.contactapi.entity.Contact;
+-import in.clarigence.contactapi.entity.ContactStatus;
+-import java.util.List;
+-import org.springframework.data.jpa.repository.JpaRepository;
+-import org.springframework.data.jpa.repository.Query;
+-import org.springframework.data.repository.query.Param;
+-import org.springframework.data.domain.Page;
+-import org.springframework.data.domain.Pageable;
+-
+-public interface ContactRepository extends JpaRepository<Contact, Long> {
+-
+-    @Query("""
+-            SELECT c FROM Contact c
+-            WHERE (:status IS NULL OR c.status = :status)
+-              AND (:query IS NULL OR
+-                   LOWER(c.name) LIKE LOWER(CONCAT('%', :query, '%')) OR
+-                   LOWER(c.email) LIKE LOWER(CONCAT('%', :query, '%')) OR
+-                   LOWER(COALESCE(c.company, '')) LIKE LOWER(CONCAT('%', :query, '%')) OR
+-                   LOWER(c.service) LIKE LOWER(CONCAT('%', :query, '%')) OR
+-                   LOWER(c.message) LIKE LOWER(CONCAT('%', :query, '%')))
+-            """)
+-    Page<Contact> search(@Param("query") String query,
+-                         @Param("status") ContactStatus status,
+-                         Pageable pageable);
+-
+-    @Query("SELECT c.status AS status, COUNT(c) AS total FROM Contact c GROUP BY c.status")
+-    List<ContactStatusCount> countByStatus();
+-
+-    interface ContactStatusCount {
+-        ContactStatus getStatus();
+-        long getTotal();
+-    }
+-}
++package in.clarigence.contactapi.repository;
++
++import in.clarigence.contactapi.entity.Contact;
++import in.clarigence.contactapi.entity.ContactStatus;
++import java.util.List;
++import org.springframework.data.jpa.repository.JpaRepository;
++import org.springframework.data.jpa.repository.Query;
++import org.springframework.data.repository.query.Param;
++import org.springframework.data.domain.Page;
++import org.springframework.data.domain.Pageable;
++
++public interface ContactRepository extends JpaRepository<Contact, Long> {
++
++    @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
++    @Query("SELECT c FROM Contact c WHERE c.id = :id")
++    java.util.Optional<Contact> findForNotification(@Param("id") Long id);
++
++    java.util.Optional<Contact> findBySubmissionKey(String submissionKey);
++
++    @Query("""
++            SELECT c FROM Contact c
++            WHERE (:status IS NULL OR c.status = :status)
++              AND (:query IS NULL OR
++                   LOWER(c.name) LIKE LOWER(CONCAT('%', :query, '%')) OR
++                   LOWER(c.email) LIKE LOWER(CONCAT('%', :query, '%')) OR
++                   LOWER(COALESCE(c.company, '')) LIKE LOWER(CONCAT('%', :query, '%')) OR
++                   LOWER(c.service) LIKE LOWER(CONCAT('%', :query, '%')) OR
++                   LOWER(c.message) LIKE LOWER(CONCAT('%', :query, '%')))
++            """)
++    Page<Contact> search(@Param("query") String query,
++                         @Param("status") ContactStatus status,
++                         Pageable pageable);
++
++    @Query("SELECT c.status AS status, COUNT(c) AS total FROM Contact c GROUP BY c.status")
++    List<ContactStatusCount> countByStatus();
++
++    interface ContactStatusCount {
++        ContactStatus getStatus();
++        long getTotal();
++    }
++}
+--- a/backend/src/main/java/in/clarigence/contactapi/service/ContactService.java
++++ b/backend/src/main/java/in/clarigence/contactapi/service/ContactService.java
+@@ -1,51 +1,57 @@
+-package in.clarigence.contactapi.service;
+-
+-import in.clarigence.contactapi.dto.ContactRequest;
+-import in.clarigence.contactapi.dto.ContactResponse;
+-import in.clarigence.contactapi.entity.Contact;
+-import in.clarigence.contactapi.exception.ContactPersistenceException;
+-import in.clarigence.contactapi.repository.ContactRepository;
+-import java.util.Locale;
+-import org.springframework.context.ApplicationEventPublisher;
+-import org.springframework.dao.DataAccessException;
+-import org.springframework.stereotype.Service;
+-import org.springframework.transaction.annotation.Transactional;
+-
+-@Service
+-public class ContactService {
+-
+-    private final ContactRepository contactRepository;
+-    private final ApplicationEventPublisher events;
+-
+-    public ContactService(ContactRepository contactRepository, ApplicationEventPublisher events) {
+-        this.contactRepository = contactRepository;
+-        this.events = events;
+-    }
+-
+-    @Transactional
+-    public ContactResponse create(ContactRequest request) {
+-        Contact contact = new Contact(
+-                request.name().trim(),
+-                request.email().trim().toLowerCase(Locale.ROOT),
+-                cleanOptional(request.phone()),
+-                cleanOptional(request.company()),
+-                request.service().trim(),
+-                request.message().trim()
+-        );
+-
+-        try {
+-            Contact saved = contactRepository.saveAndFlush(contact);
+-            events.publishEvent(new EnquiryCreated(saved));
+-            return new ContactResponse(saved.getId(), "Your enquiry has been received.", saved.getCreatedAt());
+-        } catch (DataAccessException exception) {
+-            throw new ContactPersistenceException("We could not save your enquiry right now.", exception);
+-        }
+-    }
+-
+-    private String cleanOptional(String value) {
+-        if (value == null || value.isBlank()) {
+-            return null;
+-        }
+-        return value.trim();
+-    }
+-}
++package in.clarigence.contactapi.service;
++
++import in.clarigence.contactapi.dto.ContactRequest;
++import in.clarigence.contactapi.dto.ContactResponse;
++import in.clarigence.contactapi.entity.Contact;
++import in.clarigence.contactapi.exception.ContactPersistenceException;
++import in.clarigence.contactapi.repository.ContactRepository;
++import java.util.Locale;
++import org.springframework.context.ApplicationEventPublisher;
++import org.springframework.dao.DataAccessException;
++import org.springframework.stereotype.Service;
++import org.springframework.transaction.annotation.Transactional;
++
++@Service
++public class ContactService {
++
++    private final ContactRepository contactRepository;
++    private final ApplicationEventPublisher events;
++
++    public ContactService(ContactRepository contactRepository, ApplicationEventPublisher events) {
++        this.contactRepository = contactRepository;
++        this.events = events;
++    }
++
++    @Transactional
++    public ContactResponse create(ContactRequest request) {
++        return create(request, null);
++    }
++
++    @Transactional
++    public ContactResponse create(ContactRequest request, String submissionKey) {
++        Contact contact = new Contact(
++                request.name().trim(),
++                request.email().trim().toLowerCase(Locale.ROOT),
++                cleanOptional(request.phone()),
++                cleanOptional(request.company()),
++                request.service().trim(),
++                request.message().trim()
++        );
++
++        contact.setSubmissionKey(submissionKey);
++        try {
++            Contact saved = contactRepository.saveAndFlush(contact);
++            events.publishEvent(new EnquiryCreated(saved));
++            return new ContactResponse(saved.getId(), "Your enquiry has been received.", saved.getCreatedAt());
++        } catch (DataAccessException exception) {
++            throw new ContactPersistenceException("We could not save your enquiry right now.", exception);
++        }
++    }
++
++    private String cleanOptional(String value) {
++        if (value == null || value.isBlank()) {
++            return null;
++        }
++        return value.trim();
++    }
++}
+--- /dev/null
++++ b/backend/src/main/java/in/clarigence/contactapi/service/ContactSubmissionService.java
+@@ -0,0 +1,44 @@
++package in.clarigence.contactapi.service;
++
++import in.clarigence.contactapi.dto.*;
++import in.clarigence.contactapi.entity.Contact;
++import in.clarigence.contactapi.repository.ContactRepository;
++import in.clarigence.contactapi.exception.ContactPersistenceException;
++import java.util.Objects;
++import org.springframework.stereotype.Service;
++import org.springframework.web.server.ResponseStatusException;
++import org.springframework.http.HttpStatus;
++
++@Service
++public class ContactSubmissionService {
++    private final ContactService writer;
++    private final ContactRepository contacts;
++    public ContactSubmissionService(ContactService writer, ContactRepository contacts) {
++        this.writer = writer; this.contacts = contacts;
++    }
++    public ContactResponse submit(ContactRequest request, String key) {
++        if (key == null) return writer.create(request);
++        try { java.util.UUID.fromString(key); }
++        catch (IllegalArgumentException e) { throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid submission key."); }
++        if (key.length() != 36) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid submission key.");
++        Contact existing = contacts.findBySubmissionKey(key).orElse(null);
++        if (existing != null) return replay(existing, request);
++        try { return writer.create(request, key); }
++        catch (ContactPersistenceException e) {
++            // A concurrent request can win the unique-key race. The writer's transaction
++            // has rolled back before looking up the committed winner.
++            existing = contacts.findBySubmissionKey(key).orElse(null);
++            if (existing != null) return replay(existing, request);
++            throw e;
++        }
++    }
++    private ContactResponse replay(Contact c, ContactRequest r) {
++        if (!Objects.equals(c.getName(), r.name().trim()) || !c.getEmail().equalsIgnoreCase(r.email().trim())
++                || !Objects.equals(clean(c.getPhone()), clean(r.phone()))
++                || !Objects.equals(clean(c.getCompany()), clean(r.company()))
++                || !c.getService().equals(r.service().trim()) || !c.getMessage().equals(r.message().trim()))
++            throw new ResponseStatusException(HttpStatus.CONFLICT, "Submission key already used with different details.");
++        return new ContactResponse(c.getId(), "Your enquiry has been received.", c.getCreatedAt());
++    }
++    private String clean(String s) { return s == null || s.isBlank() ? "" : s.trim(); }
++}
+--- a/backend/src/main/java/in/clarigence/contactapi/service/EnquiryEmailNotification.java
++++ b/backend/src/main/java/in/clarigence/contactapi/service/EnquiryEmailNotification.java
+@@ -1,73 +1,21 @@
+-package in.clarigence.contactapi.service;
+-
+-import in.clarigence.contactapi.entity.Contact;
+-import org.slf4j.Logger;
+-import org.slf4j.LoggerFactory;
+-import org.springframework.beans.factory.annotation.Value;
+-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+-import org.springframework.mail.SimpleMailMessage;
+-import org.springframework.mail.javamail.JavaMailSender;
+-import org.springframework.stereotype.Component;
+-import org.springframework.transaction.event.TransactionPhase;
+-import org.springframework.transaction.event.TransactionalEventListener;
+-
+-@Component
+-@ConditionalOnProperty(name = "clarigence.enquiry-email.enabled", havingValue = "true")
+-public class EnquiryEmailNotification {
+-
+-    private static final Logger log = LoggerFactory.getLogger(EnquiryEmailNotification.class);
+-    private final JavaMailSender sender;
+-    private final String recipient;
+-    private final String from;
+-
+-    public EnquiryEmailNotification(JavaMailSender sender,
+-            @Value("${clarigence.enquiry-email.to}") String recipient,
+-            @Value("${clarigence.enquiry-email.from}") String from) {
+-        this.sender = sender;
+-        this.recipient = recipient;
+-        this.from = from;
+-        if (recipient.isBlank() || from.isBlank()) {
+-            throw new IllegalArgumentException("Enquiry email requires a recipient and sender address.");
+-        }
+-    }
+-
+-    // Send synchronously after commit so serverless hosts finish the attempt before returning.
+-    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+-    public void send(EnquiryCreated event) {
+-        Contact contact = event.contact();
+-        log.info("Email sending started for saved enquiry {}.", contact.getId());
+-        try {
+-            SimpleMailMessage mail = new SimpleMailMessage();
+-            mail.setTo(recipient);
+-            mail.setFrom(from);
+-            mail.setReplyTo(contact.getEmail());
+-            mail.setSubject("New Clarigence enquiry #" + contact.getId());
+-            mail.setText("""
+-                    A new website enquiry has been saved in the admin portal.
+-
+-                    Enquiry ID: %s
+-                    Received (UTC): %s
+-                    Name: %s
+-                    Email: %s
+-                    Phone: %s
+-                    Company: %s
+-                    Service: %s
+-
+-                    Message:
+-                    %s
+-                    """.formatted(contact.getId(), contact.getCreatedAt(), contact.getName(),
+-                    contact.getEmail(), optional(contact.getPhone()), optional(contact.getCompany()),
+-                    contact.getService(), contact.getMessage()));
+-            sender.send(mail);
+-            log.info("Email sent successfully for enquiry {} (email provider accepted the message).", contact.getId());
+-        } catch (RuntimeException exception) {
+-            // Avoid logging enquiry contents or SMTP credentials.
+-            log.error("Email sending failed for saved enquiry {}: type={}, diagnostic={}. Enquiry remains saved.",
+-                    contact.getId(), exception.getClass().getSimpleName(), MailFailureDiagnostic.describe(exception));
+-        }
+-    }
+-
+-    private static String optional(String value) {
+-        return value == null || value.isBlank() ? "Not provided" : value;
+-    }
+-}
++package in.clarigence.contactapi.service;
++
++import org.slf4j.Logger;
++import org.slf4j.LoggerFactory;
++import org.springframework.stereotype.Component;
++import org.springframework.transaction.event.*;
++
++@Component
++public class EnquiryEmailNotification {
++    private static final Logger log = LoggerFactory.getLogger(EnquiryEmailNotification.class);
++    private final NotificationDeliveryService delivery;
++    public EnquiryEmailNotification(NotificationDeliveryService delivery) { this.delivery = delivery; }
++    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
++    public void send(EnquiryCreated event) {
++        try { delivery.deliver(event.contact().getId()); }
++        catch (RuntimeException e) {
++            log.error("Notification processing failed for saved enquiry {}: {}. Enquiry remains saved; admin can retry.",
++                    event.contact().getId(), e.getClass().getSimpleName());
++        }
++    }
++}
+--- /dev/null
++++ b/backend/src/main/java/in/clarigence/contactapi/service/NotificationDeliveryService.java
+@@ -0,0 +1,74 @@
++package in.clarigence.contactapi.service;
++
++import in.clarigence.contactapi.entity.Contact;
++import in.clarigence.contactapi.dto.EnquiryDetails;
++import in.clarigence.contactapi.exception.ResourceNotFoundException;
++import in.clarigence.contactapi.repository.ContactRepository;
++import org.springframework.beans.factory.ObjectProvider;
++import org.springframework.beans.factory.annotation.Value;
++import org.springframework.mail.SimpleMailMessage;
++import org.springframework.mail.javamail.JavaMailSender;
++import org.springframework.stereotype.Service;
++import org.springframework.transaction.annotation.*;
++import org.slf4j.Logger;
++import org.slf4j.LoggerFactory;
++
++@Service
++public class NotificationDeliveryService {
++    private static final Logger log = LoggerFactory.getLogger(NotificationDeliveryService.class);
++    private final ContactRepository contacts;
++    private final ObjectProvider<JavaMailSender> sender;
++    private final boolean enabled;
++    private final String recipient, from;
++    public NotificationDeliveryService(ContactRepository contacts, ObjectProvider<JavaMailSender> sender,
++            @Value("${clarigence.enquiry-email.enabled:false}") boolean enabled,
++            @Value("${clarigence.enquiry-email.to:hello@clarigence.in}") String recipient,
++            @Value("${clarigence.enquiry-email.from:}") String from) {
++        this.contacts = contacts; this.sender = sender; this.enabled = enabled;
++        this.recipient = recipient; this.from = from;
++    }
++    @Transactional(propagation = Propagation.REQUIRES_NEW)
++    public EnquiryDetails deliver(Long id) {
++        Contact c = contacts.findForNotification(id).orElseThrow(() -> new ResourceNotFoundException("Enquiry not found."));
++        // Serialize concurrent retries across instances using the database row lock.
++        return deliverLocked(c);
++    }
++    private EnquiryDetails deliverLocked(Contact c) {
++        if ("SENT".equals(c.getNotificationStatus())) return EnquiryDetails.from(c);
++        if (!enabled) {
++            c.recordNotification("DISABLED", "Notifications are disabled on the backend host.");
++            return EnquiryDetails.from(c);
++        }
++        log.info("Email sending started for saved enquiry {}.", c.getId());
++        try {
++            SimpleMailMessage mail = new SimpleMailMessage();
++            mail.setTo(recipient); mail.setFrom(from); mail.setReplyTo(c.getEmail());
++            mail.setSubject("New Clarigence enquiry #" + c.getId());
++            mail.setText("""
++                    A new website enquiry has been saved in the admin portal.
++
++                    Enquiry ID: %s
++                    Received (UTC): %s
++                    Name: %s
++                    Email: %s
++                    Phone: %s
++                    Company: %s
++                    Service: %s
++
++                    Message:
++                    %s
++                    """.formatted(c.getId(), c.getCreatedAt(), c.getName(), c.getEmail(), optional(c.getPhone()),
++                        optional(c.getCompany()), c.getService(), c.getMessage()));
++            sender.getObject().send(mail);
++            c.recordNotification("SENT", null);
++            log.info("Email sent successfully for enquiry {} (email provider accepted the message).", c.getId());
++        } catch (RuntimeException e) {
++            String diagnostic = MailFailureDiagnostic.describe(e);
++            c.recordNotification("FAILED", diagnostic);
++            log.error("Email sending failed for saved enquiry {}: type={}, diagnostic={}. Enquiry remains saved.",
++                    c.getId(), e.getClass().getSimpleName(), diagnostic);
++        }
++        return EnquiryDetails.from(c);
++    }
++    private String optional(String s) { return s == null || s.isBlank() ? "Not provided" : s; }
++}
+--- a/backend/src/main/resources/static/admin/admin.css
++++ b/backend/src/main/resources/static/admin/admin.css
+@@ -1,77 +1,80 @@
+-:root{color-scheme:light;--ink:#172c2a;--muted:#718079;--line:#e3e6e9;--paper:#f4f5f7;--white:#ffffff;--green:#243b59;--green-dark:#18283c;--soft:#e8ecf1;--red:#a13d36;--shadow:0 18px 50px #1b27360e}*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:var(--paper);color:var(--ink);font:14px/1.55 'DM Sans',Inter,Segoe UI,Arial,sans-serif;-webkit-font-smoothing:antialiased}button,input,select{font:inherit}button,a{-webkit-tap-highlight-color:transparent}a{color:inherit;text-decoration:none}[hidden]{display:none!important}.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}.brand-mark{display:grid;grid-template-columns:repeat(2,8px);grid-template-rows:repeat(2,8px);gap:3px;transform:rotate(-8deg);flex:none}.brand-mark i{background:#4f698b;border-radius:1px}.brand-mark i:nth-child(2){background:#81a7d8}.brand-mark i:nth-child(3){background:#7293bf}.brand-mark i:nth-child(4){background:#283f5c}.eyebrow{font-size:9px;font-weight:700;letter-spacing:1.25px;color:#718279;margin:0 0 7px}.login-shell{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:35px 20px;background:radial-gradient(ellipse at 50% 35%,#e8ecf1 0,transparent 50%),var(--paper)}.login-brand{display:inline-flex;align-items:center;gap:10px;font-size:22px;font-weight:800;letter-spacing:-1px;margin-bottom:30px}.login-brand .brand-mark{margin-right:1px}.login-brand>span:last-child{color:#5d789b}.login-card{width:min(100%,420px);padding:34px 35px 30px;background:#ffffff;border:1px solid var(--line);border-radius:8px;box-shadow:var(--shadow)}.login-card h1{font:700 31px/1.2 'Manrope','DM Sans',Arial,sans-serif;letter-spacing:-1.4px;margin:0}.login-copy{color:var(--muted);font-size:13px;margin:8px 0 26px}.login-card label{display:block;font-size:11px;font-weight:700;margin:15px 0 6px}.login-card input,.filter-select select,.search-box input,.dialog-actions select{width:100%;height:44px;border:1px solid #dce3dc;background:#ffffff;border-radius:4px;padding:0 12px;color:var(--ink);outline:none}.login-card input::placeholder,.search-box input::placeholder{color:#9aa49d}.login-card input:focus,.filter-select select:focus,.search-box:focus-within,.dialog-actions select:focus{border-color:#6d8098;box-shadow:0 0 0 3px #526a891c}.button{border:0;border-radius:4px;min-height:43px;padding:11px 16px;display:inline-flex;align-items:center;justify-content:center;gap:20px;cursor:pointer;font-size:12px;font-weight:700;transition:background .18s ease,transform .18s ease,box-shadow .18s ease}.button:hover{transform:translateY(-1px)}.primary-button{background:linear-gradient(135deg,#173b35,#283f5c);color:#ffffff}.primary-button:hover{background:#283f5d;box-shadow:0 8px 20px #18283c27}.primary-button:disabled{opacity:.6;cursor:wait;transform:none}.login-card .primary-button{width:100%;margin-top:21px}.form-message{min-height:20px;color:var(--muted);font-size:11px;margin:10px 0 0}.form-message[data-state="error"]{color:var(--red)}.form-message[data-state="success"]{color:#233e61}.login-foot{color:#86928a;font-size:10px;margin:21px 0 0}.app-shell{min-height:100vh}.sidebar{position:fixed;inset:0 auto 0 0;width:238px;background:var(--green-dark);color:#e9ecf1;display:flex;flex-direction:column;padding:26px 16px 18px;z-index:4}.sidebar-brand{display:flex;align-items:center;gap:11px;padding:2px 10px;font-weight:800;font-size:19px;letter-spacing:-.8px}.sidebar-brand .brand-mark{filter:saturate(.8)}.brand-domain,.mobile-brand>span:last-child{color:#8baedb}.sidebar-brand small{display:block;font-size:8px;letter-spacing:1.4px;font-weight:700;color:#9ca6b4;margin-top:3px}.side-nav{display:grid;gap:6px;margin-top:51px}.side-link{height:43px;border-radius:4px;padding:0 11px;display:flex;align-items:center;gap:11px;color:#c0c7d0;font-size:12px;transition:background .2s,color .2s}.side-link span{width:17px;text-align:center;color:#9eb0c7;font-size:16px}.side-link:hover,.side-link.selected{background:#ffffff13;color:#ffffff}.side-link.selected{box-shadow:inset 2px 0 #98b7df}.sidebar-bottom{margin-top:auto;display:flex;align-items:center;gap:9px;border-top:1px solid #ffffff20;padding:16px 8px 0;color:#bfc6d0;font-size:10px}.secure-dot,.status-dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:#7695bd;flex:none}.topbar{height:70px;background:#ffffffd9;border-bottom:1px solid var(--line);display:flex;align-items:center;padding:0 39px;gap:22px;margin-left:238px}.topbar-spacer{flex:1}.admin-email{font-size:11px;color:#65746d}.logout-button,.refresh-button,.pager-button,.icon-button,.delete-button{display:inline-flex;align-items:center;justify-content:center;gap:9px;border:1px solid var(--line);background:#ffffff;color:#404853;border-radius:4px;height:36px;padding:0 12px;cursor:pointer;font-size:11px;font-weight:600;transition:border .18s ease,color .18s ease,background .18s ease}.logout-button:hover,.refresh-button:hover,.pager-button:hover,.icon-button:hover{border-color:#a7b9aa;color:var(--green)}.logout-button span{font-size:15px}.mobile-brand{display:none}.content-wrap{max-width:1370px;margin-left:238px;padding:37px 39px 22px}.page-heading{display:flex;align-items:flex-end;justify-content:space-between;gap:20px;margin-bottom:24px}.page-heading h1{font:700 clamp(25px,2.4vw,32px)/1.2 'Manrope','DM Sans',Arial,sans-serif;letter-spacing:-1.25px;margin:0}.page-subtitle{margin:7px 0 0;color:var(--muted);font-size:12px}.today-pill{font-size:10px;color:#556272;background:#e9edf3;padding:7px 11px;border-radius:50px;display:inline-flex;align-items:center;gap:8px;white-space:nowrap}.stat-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:13px}.stat-card{min-height:119px;padding:17px 18px;background:#ffffff;border:1px solid var(--line);border-radius:5px;box-shadow:0 3px 12px #242f3d06}.total-card{background:linear-gradient(140deg,#ffffff,#eef2f7)}.stat-label{display:flex;align-items:center;gap:7px;font-size:9px;font-weight:700;letter-spacing:.8px;color:#75827b}.stat-label .status-dot{width:6px;height:6px}.new-dot{background:#d8a74d}.contacted-dot{background:#6689c3}.converted-dot{background:#6680a1}.stat-value{font:700 29px/1.15 'Manrope','DM Sans',Arial,sans-serif;letter-spacing:-1px;margin-top:11px}.stat-foot{display:block;font-size:10px;color:#7b8981;margin-top:2px}.inbox-section{margin-top:32px;background:#ffffff;border:1px solid var(--line);border-radius:6px;box-shadow:0 5px 20px #242f3d07;overflow:hidden}.inbox-heading{display:flex;align-items:end;justify-content:space-between;padding:21px 23px 16px}.inbox-heading .eyebrow{margin-bottom:4px}.inbox-heading h2{font:700 19px 'Manrope','DM Sans',Arial,sans-serif;letter-spacing:-.5px;margin:0}.result-count{color:#718079;font-size:10px}.filter-bar{display:flex;align-items:center;gap:10px;padding:0 23px 17px}.search-box{height:40px;max-width:390px;flex:1;display:flex;align-items:center;gap:8px;border:1px solid #dce3dc;border-radius:4px;padding:0 10px;color:#8b988f}.search-box:focus-within{border-color:#6d8098;box-shadow:0 0 0 3px #526a891c}.search-box input{height:37px;border:0;box-shadow:none!important;padding:0;font-size:11px}.search-box input:focus{outline:none}.filter-select{width:165px}.filter-select select{height:40px;font-size:11px;padding:0 10px}.refresh-button{height:40px;white-space:nowrap}.refresh-button span{font-size:17px}.table-wrap{overflow-x:auto;border-top:1px solid #edf0ec}.enquiry-table{width:100%;border-collapse:collapse;text-align:left;min-width:680px}.enquiry-table th{height:40px;background:#f9fafb;color:#77837c;font-size:8px;letter-spacing:.8px;font-weight:700;padding:0 16px;white-space:nowrap}.enquiry-table th:first-child,.enquiry-table td:first-child{padding-left:23px}.enquiry-table td{height:67px;border-top:1px solid #edf0ec;padding:10px 16px;font-size:11px;color:#52645b;vertical-align:middle}.enquiry-table tbody tr{transition:background .15s ease}.enquiry-table tbody tr:hover{background:#fafbfc}.contact-cell{min-width:210px}.contact-name{font-size:12px;font-weight:700;color:#262f3a}.contact-email{font-size:10px;color:#738178;margin-top:2px}.service-cell{max-width:175px}.received-cell{white-space:nowrap;font-size:10px!important;color:#718078!important}.status-badge{display:inline-flex;align-items:center;gap:6px;padding:5px 8px;border-radius:50px;font-size:9px;font-weight:700;white-space:nowrap}.status-badge:before{content:'';width:6px;height:6px;border-radius:50%;background:currentColor}.status-NEW{color:#936417;background:#fbf2dd}.status-CONTACTED{color:#3e6296;background:#eaf0fb}.status-CONVERTED{color:#324e73;background:#e8edf4}.status-CLOSED{color:#68766e;background:#edf0ed}.view-button{border:0;background:transparent;color:#475b76;cursor:pointer;font-size:10px;font-weight:700;white-space:nowrap;padding:8px 4px}.view-button:hover{text-decoration:underline}.empty-state{text-align:center;padding:57px 20px 61px}.empty-icon{display:grid;place-items:center;width:41px;height:41px;margin:auto;border-radius:50%;background:#e9edf3;color:#687b95;font-size:19px}.empty-state h3{font:700 15px 'Manrope','DM Sans',Arial,sans-serif;margin:14px 0 3px}.empty-state p{color:var(--muted);font-size:11px;margin:0}.table-footer{min-height:55px;border-top:1px solid #edf0ec;padding:9px 20px 9px 23px;display:flex;align-items:center;justify-content:space-between;color:#748078;font-size:10px}.table-footer>div{display:flex;gap:6px}.pager-button{width:33px;height:31px;padding:0;font-size:15px}.pager-button:disabled{opacity:.42;cursor:default}.dashboard-message{min-height:0;margin:0;padding:0 23px;color:var(--red);font-size:11px}.dashboard-message:not(:empty){padding-bottom:13px}.app-footer{display:flex;justify-content:space-between;gap:15px;padding:20px 2px;color:#849088;font-size:9px}.detail-dialog{width:min(560px,calc(100% - 28px));max-height:min(90vh,800px);overflow:auto;border:1px solid var(--line);border-radius:8px;padding:23px 25px 19px;color:var(--ink);box-shadow:0 30px 90px #131c2842}.detail-dialog::backdrop{background:#121a2478;backdrop-filter:blur(2px)}.dialog-top{display:flex;justify-content:space-between;gap:20px;border-bottom:1px solid var(--line);padding-bottom:16px}.dialog-top h2{font:700 21px 'Manrope','DM Sans',Arial,sans-serif;letter-spacing:-.6px;margin:0}.icon-button{width:35px;height:35px;padding:0;font-size:22px}.detail-content{padding:18px 0 10px}.detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}.detail-field{min-width:0}.detail-field.full{grid-column:1/-1}.detail-label{display:block;font-size:8px;letter-spacing:.8px;color:#7b8980;font-weight:700;margin-bottom:4px}.detail-value{font-size:12px;color:#262f3b;overflow-wrap:anywhere;white-space:pre-wrap}.detail-value a{color:#395170;text-decoration:underline;text-underline-offset:2px}.dialog-actions{display:flex;align-items:center;gap:9px;flex-wrap:wrap;border-top:1px solid var(--line);padding-top:16px}.dialog-actions label{font-size:10px;font-weight:700}.dialog-actions select{width:134px;height:37px;font-size:10px}.dialog-actions .button{min-height:37px;padding:9px 12px;font-size:10px}.delete-button{margin-left:auto;border-color:#ead0ce;color:#a13d36;height:37px}.delete-button:hover{background:#fff5f4;border-color:#d8aaa6}.detail-dialog>.form-message{margin-top:8px;min-height:18px}button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid #7d95b4;outline-offset:2px}button:disabled{cursor:wait;opacity:.6}
+-@media(max-width:1050px){.sidebar{width:210px}.topbar,.content-wrap{margin-left:210px}.topbar{padding-inline:27px}.content-wrap{padding:32px 27px 20px}.stat-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.stat-card{min-height:105px}.sidebar-brand{font-size:17px}}
+-@media(max-width:720px){.sidebar{inset:auto 0 0;width:auto;height:62px;padding:5px 12px;border-top:1px solid #ffffff20;flex-direction:row;align-items:center}.sidebar-brand,.sidebar-bottom{display:none}.side-nav{margin:0;width:100%;grid-template-columns:1fr 1fr;gap:8px}.side-link{height:49px;justify-content:center;padding:0 8px}.side-link.selected{box-shadow:inset 0 2px #98b7df}.topbar{height:61px;margin-left:0;padding:0 18px}.mobile-brand{display:flex;align-items:center;gap:7px;font-size:15px;font-weight:800;letter-spacing:-.5px}.mobile-brand .brand-mark{transform:scale(.85) rotate(-8deg);margin-right:2px}.topbar-spacer{flex:1}.admin-email{font-size:10px;max-width:145px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.logout-button{height:34px;padding-inline:9px;font-size:10px}.content-wrap{margin-left:0;padding:27px 17px 88px}.page-heading{align-items:flex-start;margin-bottom:20px}.page-heading h1{font-size:25px}.page-subtitle{font-size:11px}.today-pill{font-size:0;width:29px;height:29px;padding:0;justify-content:center}.today-pill .secure-dot{width:8px;height:8px}.stat-grid{gap:9px}.stat-card{padding:14px 14px;min-height:99px}.stat-label{font-size:8px}.stat-value{font-size:25px;margin-top:8px}.stat-foot{font-size:9px}.inbox-section{margin-top:22px}.inbox-heading{padding:17px 15px 13px}.filter-bar{padding:0 14px 14px;flex-wrap:wrap}.search-box{max-width:none;flex:1 1 100%}.filter-select{flex:1;width:auto}.refresh-button{flex:0 0 auto}.enquiry-table{min-width:620px}.enquiry-table th:first-child,.enquiry-table td:first-child{padding-left:15px}.app-footer{font-size:8px;align-items:flex-start;flex-direction:column;gap:3px;padding-top:14px}.detail-dialog{padding:19px 17px 15px}.dialog-actions{gap:7px}.dialog-actions label{flex:0 0 auto}.dialog-actions select{flex:1}.delete-button{margin-left:0}.login-card{padding:28px 23px}}
+-@media(max-width:400px){.admin-email{max-width:94px}.logout-button{gap:5px}.stat-foot{font-size:8px}.detail-grid{grid-template-columns:1fr}.detail-field.full{grid-column:auto}}
+-@media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;transition:none!important}}
+-.closed-dot{background:#88948d}
+-.cms-panel{min-width:0}.cms-panel h1{font-size:30px;margin:0 0 24px}.cms-toolbar{display:flex;align-items:center;gap:22px;flex-wrap:wrap;margin:22px 0}.cms-toolbar p{font-size:12px;color:var(--muted);max-width:500px}.cms-records{display:grid;gap:12px}.cms-record{padding:22px;border:1px solid var(--line);background:#fff;border-radius:9px;display:flex;align-items:center;justify-content:space-between;gap:25px;min-width:0}.cms-record h2{font-size:18px;margin:0 0 7px;overflow-wrap:anywhere}.cms-record p{font-size:12px;margin:0;overflow-wrap:anywhere;color:var(--muted)}.cms-row-actions{display:flex;flex-wrap:wrap;gap:8px;flex-shrink:0}.cms-empty{padding:30px;background:#fff;border:1px solid var(--line)}.cms-editor{margin-top:24px;padding:28px;border:1px solid var(--line);border-radius:12px;background:#fff;display:grid;grid-template-columns:1fr 1fr;gap:18px 24px;min-width:0}.cms-editor>h2,.cms-editor>p,.cms-form-actions{grid-column:1/-1}.cms-editor h2{margin:0;font-size:23px}.cms-editor>p{font-size:12px;color:var(--muted);margin:0}.cms-field{min-width:0}.cms-field label{display:block;font-size:12px;font-weight:600;margin-bottom:7px}.cms-field input,.cms-field select,.cms-field textarea,#cms-seo-page{width:100%;min-height:44px;padding:10px 12px;font:inherit;border:1px solid #ccd6e4;border-radius:6px;background:#fff;color:var(--ink)}.cms-field textarea{resize:vertical;min-height:112px}.cms-field input[readonly]{background:#f4f7fb}.cms-field small{font-size:11px;color:var(--muted);display:block;margin-top:6px}.cms-field-error{color:#a13d36;font-size:12px;display:block;margin-top:5px}.cms-field [aria-invalid=true]{border-color:#a13d36}.cms-form-actions{display:flex;flex-wrap:wrap;gap:12px;margin-top:15px}#cms-seo-page{width:min(100%,300px);margin-top:12px}.cms-panel>.form-message{margin-block:16px}.cms-editor input:focus-visible,.cms-editor textarea:focus-visible{outline:3px solid #0058c8;outline-offset:2px}.side-nav{max-height:calc(100vh - 230px);overflow-y:auto}.side-link{flex-shrink:0}.stat-grid{grid-template-columns:repeat(4,minmax(0,1fr))}
+-@media(max-width:1050px){.stat-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.cms-record{align-items:start;flex-direction:column}.cms-row-actions{flex-shrink:1}}
+-@media(max-width:720px){.sidebar{height:auto;min-height:62px;padding:5px 8px}.side-nav{display:flex;overflow-x:auto;overflow-y:hidden;max-height:none;gap:5px;max-width:100%;padding-bottom:2px}.side-link{min-width:80px;font-size:11px}.content-wrap{padding-bottom:95px}.cms-editor{grid-template-columns:1fr;padding:20px 16px}.cms-editor>h2,.cms-editor>p,.cms-form-actions{grid-column:auto}.cms-record{padding:18px}.cms-panel h1{font-size:26px}.cms-field input,.cms-field select,.cms-field textarea{font-size:16px}}
+-
+-/* Clarigence logo palette */
+-:root{--ink:#001850;--muted:#596d88;--line:#d8e5f5;--paper:#f6f9ff;--white:#fff;--green:#0058c8;--green-dark:#001850;--soft:#eaf3ff;--red:#a13d36;--shadow:0 18px 50px #00185012}
+-::selection{background:#cfe3ff;color:#001850}
+-button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid #0058c8;outline-offset:2px}
+-.primary-button{background:linear-gradient(135deg,#001850,#0058c8);color:#fff}
+-.primary-button:hover{background:#0058c8;box-shadow:0 8px 20px #00185030}
+-.secure-dot,.status-dot{background:#278454}
+-.status-NEW{color:#855900;background:#fff3d2}
+-.status-CONTACTED{color:#174f9d;background:#e6f0ff}
+-.status-CONVERTED{color:#236146;background:#e7f4eb}
+-.status-CLOSED{color:#596879;background:#edf1f6}
+-.form-message[data-state="success"]{color:#236146}
+-.form-message[data-state="error"]{color:#a13d36}
+-.login-brand{margin-bottom:30px}
+-.login-brand .admin-brand-image{display:block;width:min(232px,68vw);height:auto;max-height:54px;object-fit:contain}
+-.sidebar-brand{flex-direction:column;align-items:flex-start;gap:8px;color:#fff}
+-.sidebar-brand .admin-brand-image{display:block;width:min(190px,100%);height:auto;max-height:46px;object-fit:contain}
+-.sidebar-brand-caption{font-size:8px;letter-spacing:1.4px;font-weight:700;color:#a9ccf5}
+-.mobile-brand{gap:0;font-size:0;letter-spacing:0}
+-.mobile-brand .admin-brand-image{display:block;width:145px;height:auto;max-height:34px;object-fit:contain}
+-@media(max-width:720px){.sidebar-brand{display:none}.mobile-brand{display:flex;align-items:center}.mobile-brand .admin-brand-image{width:min(145px,40vw)}}
+-
+-/* Admin dashboard contrast and logo visibility */
+-:root{color-scheme:light;--ink:#172033;--muted:#626d7d;--line:#e2e5e9;--paper:#f5f6f8;--white:#fff;--green:#0058c8;--green-dark:#172033;--soft:#eef0f3;--red:#a13d36;--shadow:0 16px 42px #1720330c}
+-html,body{max-width:100%;overflow-x:clip}
+-.app-shell,.main-column,.content-wrap,.inbox-section,.page-heading{min-width:0;max-width:100%}
+-.sidebar{background:#fff;color:#172033;border-right:1px solid #e3e6ea;box-shadow:2px 0 12px #17203308}
+-.sidebar-brand{align-items:flex-start;color:#172033}
+-.sidebar-brand .admin-brand-image{filter:none;width:min(190px,100%);max-height:44px}
+-.sidebar-brand-caption{color:#687386}
+-.sidebar-bottom{border-top-color:#e5e7eb;color:#626d7d}
+-.side-link{color:#475467}
+-.side-link span{color:#667085}
+-.side-link:hover{background:#f4f5f7;color:#172033}
+-.side-link:hover span{color:#0058c8}
+-.side-link.selected{background:#eaf3ff;color:#0058c8;box-shadow:inset 3px 0 #0058c8;font-weight:700}
+-.side-link.selected span{color:#0058c8}
+-.topbar{background:#fff;border-bottom-color:#e2e5e9}
+-.login-shell{background:#f5f6f8}
+-.login-card,.stat-card,.inbox-section{background:#fff;border-color:#e2e5e9}
+-.login-card input,.filter-select select,.search-box input,.dialog-actions select{border-color:#d8dde4;color:#172033}
+-.login-card input:focus,.filter-select select:focus,.search-box:focus-within,.dialog-actions select:focus{border-color:#0058c8;box-shadow:0 0 0 3px #0058c81a}
+-.eyebrow,.stat-label,.stat-foot,.detail-label{color:#626d7d}
+-.today-pill,.empty-icon{background:#f0f2f5;color:#475467}
+-.enquiry-table th{background:#f7f8fa;color:#626d7d}
+-.enquiry-table td{border-top-color:#eceef1;color:#475467}
+-.enquiry-table tbody tr:hover{background:#f8f9fb}
+-.view-button,.detail-value a{color:#0058c8}
+-.view-button:hover,.detail-value a:hover{color:#00479f}
+-.primary-button{background:#0058c8;color:#fff}
+-.primary-button:hover{background:#004eaf;box-shadow:0 7px 18px #0058c829}
+-.button:not(.primary-button):hover,.icon-button:hover,.pager-button:hover{background:#f0f2f5}
+-button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid #0058c8;outline-offset:2px}
+-.delete-button{color:#a13d36;border-color:#ead0ce}
+-.delete-button:hover{background:#fff5f4;border-color:#d8aaa6}
+-.detail-dialog{background:#fff;border-color:#e2e5e9}
+-.detail-dialog::backdrop{background:#17203378}
+-.status-NEW{color:#855900;background:#fff3d2}
+-.status-CONTACTED{color:#174f9d;background:#e6f0ff}
+-.status-CONVERTED{color:#236146;background:#e7f4eb}
+-.status-CLOSED{color:#596879;background:#edf1f6}
+-.form-message[data-state="success"]{color:#236146}
+-.form-message[data-state="error"]{color:#a13d36}
+-@media(max-width:720px){.sidebar{background:#fff;border-top-color:#e2e5e9;box-shadow:0 -2px 12px #17203308}.side-link.selected{box-shadow:inset 0 3px #0058c8}.mobile-brand .admin-brand-image{filter:none}}
++:root{color-scheme:light;--ink:#172c2a;--muted:#718079;--line:#e3e6e9;--paper:#f4f5f7;--white:#ffffff;--green:#243b59;--green-dark:#18283c;--soft:#e8ecf1;--red:#a13d36;--shadow:0 18px 50px #1b27360e}*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:var(--paper);color:var(--ink);font:14px/1.55 'DM Sans',Inter,Segoe UI,Arial,sans-serif;-webkit-font-smoothing:antialiased}button,input,select{font:inherit}button,a{-webkit-tap-highlight-color:transparent}a{color:inherit;text-decoration:none}[hidden]{display:none!important}.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}.brand-mark{display:grid;grid-template-columns:repeat(2,8px);grid-template-rows:repeat(2,8px);gap:3px;transform:rotate(-8deg);flex:none}.brand-mark i{background:#4f698b;border-radius:1px}.brand-mark i:nth-child(2){background:#81a7d8}.brand-mark i:nth-child(3){background:#7293bf}.brand-mark i:nth-child(4){background:#283f5c}.eyebrow{font-size:9px;font-weight:700;letter-spacing:1.25px;color:#718279;margin:0 0 7px}.login-shell{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:35px 20px;background:radial-gradient(ellipse at 50% 35%,#e8ecf1 0,transparent 50%),var(--paper)}.login-brand{display:inline-flex;align-items:center;gap:10px;font-size:22px;font-weight:800;letter-spacing:-1px;margin-bottom:30px}.login-brand .brand-mark{margin-right:1px}.login-brand>span:last-child{color:#5d789b}.login-card{width:min(100%,420px);padding:34px 35px 30px;background:#ffffff;border:1px solid var(--line);border-radius:8px;box-shadow:var(--shadow)}.login-card h1{font:700 31px/1.2 'Manrope','DM Sans',Arial,sans-serif;letter-spacing:-1.4px;margin:0}.login-copy{color:var(--muted);font-size:13px;margin:8px 0 26px}.login-card label{display:block;font-size:11px;font-weight:700;margin:15px 0 6px}.login-card input,.filter-select select,.search-box input,.dialog-actions select{width:100%;height:44px;border:1px solid #dce3dc;background:#ffffff;border-radius:4px;padding:0 12px;color:var(--ink);outline:none}.login-card input::placeholder,.search-box input::placeholder{color:#9aa49d}.login-card input:focus,.filter-select select:focus,.search-box:focus-within,.dialog-actions select:focus{border-color:#6d8098;box-shadow:0 0 0 3px #526a891c}.button{border:0;border-radius:4px;min-height:43px;padding:11px 16px;display:inline-flex;align-items:center;justify-content:center;gap:20px;cursor:pointer;font-size:12px;font-weight:700;transition:background .18s ease,transform .18s ease,box-shadow .18s ease}.button:hover{transform:translateY(-1px)}.primary-button{background:linear-gradient(135deg,#173b35,#283f5c);color:#ffffff}.primary-button:hover{background:#283f5d;box-shadow:0 8px 20px #18283c27}.primary-button:disabled{opacity:.6;cursor:wait;transform:none}.login-card .primary-button{width:100%;margin-top:21px}.form-message{min-height:20px;color:var(--muted);font-size:11px;margin:10px 0 0}.form-message[data-state="error"]{color:var(--red)}.form-message[data-state="success"]{color:#233e61}.login-foot{color:#86928a;font-size:10px;margin:21px 0 0}.app-shell{min-height:100vh}.sidebar{position:fixed;inset:0 auto 0 0;width:238px;background:var(--green-dark);color:#e9ecf1;display:flex;flex-direction:column;padding:26px 16px 18px;z-index:4}.sidebar-brand{display:flex;align-items:center;gap:11px;padding:2px 10px;font-weight:800;font-size:19px;letter-spacing:-.8px}.sidebar-brand .brand-mark{filter:saturate(.8)}.brand-domain,.mobile-brand>span:last-child{color:#8baedb}.sidebar-brand small{display:block;font-size:8px;letter-spacing:1.4px;font-weight:700;color:#9ca6b4;margin-top:3px}.side-nav{display:grid;gap:6px;margin-top:51px}.side-link{height:43px;border-radius:4px;padding:0 11px;display:flex;align-items:center;gap:11px;color:#c0c7d0;font-size:12px;transition:background .2s,color .2s}.side-link span{width:17px;text-align:center;color:#9eb0c7;font-size:16px}.side-link:hover,.side-link.selected{background:#ffffff13;color:#ffffff}.side-link.selected{box-shadow:inset 2px 0 #98b7df}.sidebar-bottom{margin-top:auto;display:flex;align-items:center;gap:9px;border-top:1px solid #ffffff20;padding:16px 8px 0;color:#bfc6d0;font-size:10px}.secure-dot,.status-dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:#7695bd;flex:none}.topbar{height:70px;background:#ffffffd9;border-bottom:1px solid var(--line);display:flex;align-items:center;padding:0 39px;gap:22px;margin-left:238px}.topbar-spacer{flex:1}.admin-email{font-size:11px;color:#65746d}.logout-button,.refresh-button,.pager-button,.icon-button,.delete-button{display:inline-flex;align-items:center;justify-content:center;gap:9px;border:1px solid var(--line);background:#ffffff;color:#404853;border-radius:4px;height:36px;padding:0 12px;cursor:pointer;font-size:11px;font-weight:600;transition:border .18s ease,color .18s ease,background .18s ease}.logout-button:hover,.refresh-button:hover,.pager-button:hover,.icon-button:hover{border-color:#a7b9aa;color:var(--green)}.logout-button span{font-size:15px}.mobile-brand{display:none}.content-wrap{max-width:1370px;margin-left:238px;padding:37px 39px 22px}.page-heading{display:flex;align-items:flex-end;justify-content:space-between;gap:20px;margin-bottom:24px}.page-heading h1{font:700 clamp(25px,2.4vw,32px)/1.2 'Manrope','DM Sans',Arial,sans-serif;letter-spacing:-1.25px;margin:0}.page-subtitle{margin:7px 0 0;color:var(--muted);font-size:12px}.today-pill{font-size:10px;color:#556272;background:#e9edf3;padding:7px 11px;border-radius:50px;display:inline-flex;align-items:center;gap:8px;white-space:nowrap}.stat-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:13px}.stat-card{min-height:119px;padding:17px 18px;background:#ffffff;border:1px solid var(--line);border-radius:5px;box-shadow:0 3px 12px #242f3d06}.total-card{background:linear-gradient(140deg,#ffffff,#eef2f7)}.stat-label{display:flex;align-items:center;gap:7px;font-size:9px;font-weight:700;letter-spacing:.8px;color:#75827b}.stat-label .status-dot{width:6px;height:6px}.new-dot{background:#d8a74d}.contacted-dot{background:#6689c3}.converted-dot{background:#6680a1}.stat-value{font:700 29px/1.15 'Manrope','DM Sans',Arial,sans-serif;letter-spacing:-1px;margin-top:11px}.stat-foot{display:block;font-size:10px;color:#7b8981;margin-top:2px}.inbox-section{margin-top:32px;background:#ffffff;border:1px solid var(--line);border-radius:6px;box-shadow:0 5px 20px #242f3d07;overflow:hidden}.inbox-heading{display:flex;align-items:end;justify-content:space-between;padding:21px 23px 16px}.inbox-heading .eyebrow{margin-bottom:4px}.inbox-heading h2{font:700 19px 'Manrope','DM Sans',Arial,sans-serif;letter-spacing:-.5px;margin:0}.result-count{color:#718079;font-size:10px}.filter-bar{display:flex;align-items:center;gap:10px;padding:0 23px 17px}.search-box{height:40px;max-width:390px;flex:1;display:flex;align-items:center;gap:8px;border:1px solid #dce3dc;border-radius:4px;padding:0 10px;color:#8b988f}.search-box:focus-within{border-color:#6d8098;box-shadow:0 0 0 3px #526a891c}.search-box input{height:37px;border:0;box-shadow:none!important;padding:0;font-size:11px}.search-box input:focus{outline:none}.filter-select{width:165px}.filter-select select{height:40px;font-size:11px;padding:0 10px}.refresh-button{height:40px;white-space:nowrap}.refresh-button span{font-size:17px}.table-wrap{overflow-x:auto;border-top:1px solid #edf0ec}.enquiry-table{width:100%;border-collapse:collapse;text-align:left;min-width:680px}.enquiry-table th{height:40px;background:#f9fafb;color:#77837c;font-size:8px;letter-spacing:.8px;font-weight:700;padding:0 16px;white-space:nowrap}.enquiry-table th:first-child,.enquiry-table td:first-child{padding-left:23px}.enquiry-table td{height:67px;border-top:1px solid #edf0ec;padding:10px 16px;font-size:11px;color:#52645b;vertical-align:middle}.enquiry-table tbody tr{transition:background .15s ease}.enquiry-table tbody tr:hover{background:#fafbfc}.contact-cell{min-width:210px}.contact-name{font-size:12px;font-weight:700;color:#262f3a}.contact-email{font-size:10px;color:#738178;margin-top:2px}.service-cell{max-width:175px}.received-cell{white-space:nowrap;font-size:10px!important;color:#718078!important}.status-badge{display:inline-flex;align-items:center;gap:6px;padding:5px 8px;border-radius:50px;font-size:9px;font-weight:700;white-space:nowrap}.status-badge:before{content:'';width:6px;height:6px;border-radius:50%;background:currentColor}.status-NEW{color:#936417;background:#fbf2dd}.status-CONTACTED{color:#3e6296;background:#eaf0fb}.status-CONVERTED{color:#324e73;background:#e8edf4}.status-CLOSED{color:#68766e;background:#edf0ed}.view-button{border:0;background:transparent;color:#475b76;cursor:pointer;font-size:10px;font-weight:700;white-space:nowrap;padding:8px 4px}.view-button:hover{text-decoration:underline}.empty-state{text-align:center;padding:57px 20px 61px}.empty-icon{display:grid;place-items:center;width:41px;height:41px;margin:auto;border-radius:50%;background:#e9edf3;color:#687b95;font-size:19px}.empty-state h3{font:700 15px 'Manrope','DM Sans',Arial,sans-serif;margin:14px 0 3px}.empty-state p{color:var(--muted);font-size:11px;margin:0}.table-footer{min-height:55px;border-top:1px solid #edf0ec;padding:9px 20px 9px 23px;display:flex;align-items:center;justify-content:space-between;color:#748078;font-size:10px}.table-footer>div{display:flex;gap:6px}.pager-button{width:33px;height:31px;padding:0;font-size:15px}.pager-button:disabled{opacity:.42;cursor:default}.dashboard-message{min-height:0;margin:0;padding:0 23px;color:var(--red);font-size:11px}.dashboard-message:not(:empty){padding-bottom:13px}.app-footer{display:flex;justify-content:space-between;gap:15px;padding:20px 2px;color:#849088;font-size:9px}.detail-dialog{width:min(560px,calc(100% - 28px));max-height:min(90vh,800px);overflow:auto;border:1px solid var(--line);border-radius:8px;padding:23px 25px 19px;color:var(--ink);box-shadow:0 30px 90px #131c2842}.detail-dialog::backdrop{background:#121a2478;backdrop-filter:blur(2px)}.dialog-top{display:flex;justify-content:space-between;gap:20px;border-bottom:1px solid var(--line);padding-bottom:16px}.dialog-top h2{font:700 21px 'Manrope','DM Sans',Arial,sans-serif;letter-spacing:-.6px;margin:0}.icon-button{width:35px;height:35px;padding:0;font-size:22px}.detail-content{padding:18px 0 10px}.detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}.detail-field{min-width:0}.detail-field.full{grid-column:1/-1}.detail-label{display:block;font-size:8px;letter-spacing:.8px;color:#7b8980;font-weight:700;margin-bottom:4px}.detail-value{font-size:12px;color:#262f3b;overflow-wrap:anywhere;white-space:pre-wrap}.detail-value a{color:#395170;text-decoration:underline;text-underline-offset:2px}.dialog-actions{display:flex;align-items:center;gap:9px;flex-wrap:wrap;border-top:1px solid var(--line);padding-top:16px}.dialog-actions label{font-size:10px;font-weight:700}.dialog-actions select{width:134px;height:37px;font-size:10px}.dialog-actions .button{min-height:37px;padding:9px 12px;font-size:10px}.delete-button{margin-left:auto;border-color:#ead0ce;color:#a13d36;height:37px}.delete-button:hover{background:#fff5f4;border-color:#d8aaa6}.detail-dialog>.form-message{margin-top:8px;min-height:18px}button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid #7d95b4;outline-offset:2px}button:disabled{cursor:wait;opacity:.6}
++@media(max-width:1050px){.sidebar{width:210px}.topbar,.content-wrap{margin-left:210px}.topbar{padding-inline:27px}.content-wrap{padding:32px 27px 20px}.stat-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.stat-card{min-height:105px}.sidebar-brand{font-size:17px}}
++@media(max-width:720px){.sidebar{inset:auto 0 0;width:auto;height:62px;padding:5px 12px;border-top:1px solid #ffffff20;flex-direction:row;align-items:center}.sidebar-brand,.sidebar-bottom{display:none}.side-nav{margin:0;width:100%;grid-template-columns:1fr 1fr;gap:8px}.side-link{height:49px;justify-content:center;padding:0 8px}.side-link.selected{box-shadow:inset 0 2px #98b7df}.topbar{height:61px;margin-left:0;padding:0 18px}.mobile-brand{display:flex;align-items:center;gap:7px;font-size:15px;font-weight:800;letter-spacing:-.5px}.mobile-brand .brand-mark{transform:scale(.85) rotate(-8deg);margin-right:2px}.topbar-spacer{flex:1}.admin-email{font-size:10px;max-width:145px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.logout-button{height:34px;padding-inline:9px;font-size:10px}.content-wrap{margin-left:0;padding:27px 17px 88px}.page-heading{align-items:flex-start;margin-bottom:20px}.page-heading h1{font-size:25px}.page-subtitle{font-size:11px}.today-pill{font-size:0;width:29px;height:29px;padding:0;justify-content:center}.today-pill .secure-dot{width:8px;height:8px}.stat-grid{gap:9px}.stat-card{padding:14px 14px;min-height:99px}.stat-label{font-size:8px}.stat-value{font-size:25px;margin-top:8px}.stat-foot{font-size:9px}.inbox-section{margin-top:22px}.inbox-heading{padding:17px 15px 13px}.filter-bar{padding:0 14px 14px;flex-wrap:wrap}.search-box{max-width:none;flex:1 1 100%}.filter-select{flex:1;width:auto}.refresh-button{flex:0 0 auto}.enquiry-table{min-width:620px}.enquiry-table th:first-child,.enquiry-table td:first-child{padding-left:15px}.app-footer{font-size:8px;align-items:flex-start;flex-direction:column;gap:3px;padding-top:14px}.detail-dialog{padding:19px 17px 15px}.dialog-actions{gap:7px}.dialog-actions label{flex:0 0 auto}.dialog-actions select{flex:1}.delete-button{margin-left:0}.login-card{padding:28px 23px}}
++@media(max-width:400px){.admin-email{max-width:94px}.logout-button{gap:5px}.stat-foot{font-size:8px}.detail-grid{grid-template-columns:1fr}.detail-field.full{grid-column:auto}}
++@media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;transition:none!important}}
++.closed-dot{background:#88948d}
++.cms-panel{min-width:0}.cms-panel h1{font-size:30px;margin:0 0 24px}.cms-toolbar{display:flex;align-items:center;gap:22px;flex-wrap:wrap;margin:22px 0}.cms-toolbar p{font-size:12px;color:var(--muted);max-width:500px}.cms-records{display:grid;gap:12px}.cms-record{padding:22px;border:1px solid var(--line);background:#fff;border-radius:9px;display:flex;align-items:center;justify-content:space-between;gap:25px;min-width:0}.cms-record h2{font-size:18px;margin:0 0 7px;overflow-wrap:anywhere}.cms-record p{font-size:12px;margin:0;overflow-wrap:anywhere;color:var(--muted)}.cms-row-actions{display:flex;flex-wrap:wrap;gap:8px;flex-shrink:0}.cms-empty{padding:30px;background:#fff;border:1px solid var(--line)}.cms-editor{margin-top:24px;padding:28px;border:1px solid var(--line);border-radius:12px;background:#fff;display:grid;grid-template-columns:1fr 1fr;gap:18px 24px;min-width:0}.cms-editor>h2,.cms-editor>p,.cms-form-actions{grid-column:1/-1}.cms-editor h2{margin:0;font-size:23px}.cms-editor>p{font-size:12px;color:var(--muted);margin:0}.cms-field{min-width:0}.cms-field label{display:block;font-size:12px;font-weight:600;margin-bottom:7px}.cms-field input,.cms-field select,.cms-field textarea,#cms-seo-page{width:100%;min-height:44px;padding:10px 12px;font:inherit;border:1px solid #ccd6e4;border-radius:6px;background:#fff;color:var(--ink)}.cms-field textarea{resize:vertical;min-height:112px}.cms-field input[readonly]{background:#f4f7fb}.cms-field small{font-size:11px;color:var(--muted);display:block;margin-top:6px}.cms-field-error{color:#a13d36;font-size:12px;display:block;margin-top:5px}.cms-field [aria-invalid=true]{border-color:#a13d36}.cms-form-actions{display:flex;flex-wrap:wrap;gap:12px;margin-top:15px}#cms-seo-page{width:min(100%,300px);margin-top:12px}.cms-panel>.form-message{margin-block:16px}.cms-editor input:focus-visible,.cms-editor textarea:focus-visible{outline:3px solid #0058c8;outline-offset:2px}.side-nav{max-height:calc(100vh - 230px);overflow-y:auto}.side-link{flex-shrink:0}.stat-grid{grid-template-columns:repeat(4,minmax(0,1fr))}
++@media(max-width:1050px){.stat-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.cms-record{align-items:start;flex-direction:column}.cms-row-actions{flex-shrink:1}}
++@media(max-width:720px){.sidebar{height:auto;min-height:62px;padding:5px 8px}.side-nav{display:flex;overflow-x:auto;overflow-y:hidden;max-height:none;gap:5px;max-width:100%;padding-bottom:2px}.side-link{min-width:80px;font-size:11px}.content-wrap{padding-bottom:95px}.cms-editor{grid-template-columns:1fr;padding:20px 16px}.cms-editor>h2,.cms-editor>p,.cms-form-actions{grid-column:auto}.cms-record{padding:18px}.cms-panel h1{font-size:26px}.cms-field input,.cms-field select,.cms-field textarea{font-size:16px}}
++
++/* Clarigence logo palette */
++:root{--ink:#001850;--muted:#596d88;--line:#d8e5f5;--paper:#f6f9ff;--white:#fff;--green:#0058c8;--green-dark:#001850;--soft:#eaf3ff;--red:#a13d36;--shadow:0 18px 50px #00185012}
++::selection{background:#cfe3ff;color:#001850}
++button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid #0058c8;outline-offset:2px}
++.primary-button{background:linear-gradient(135deg,#001850,#0058c8);color:#fff}
++.primary-button:hover{background:#0058c8;box-shadow:0 8px 20px #00185030}
++.secure-dot,.status-dot{background:#278454}
++.status-NEW{color:#855900;background:#fff3d2}
++.status-CONTACTED{color:#174f9d;background:#e6f0ff}
++.status-CONVERTED{color:#236146;background:#e7f4eb}
++.status-CLOSED{color:#596879;background:#edf1f6}
++.form-message[data-state="success"]{color:#236146}
++.form-message[data-state="error"]{color:#a13d36}
++.login-brand{margin-bottom:30px}
++.login-brand .admin-brand-image{display:block;width:min(232px,68vw);height:auto;max-height:54px;object-fit:contain}
++.sidebar-brand{flex-direction:column;align-items:flex-start;gap:8px;color:#fff}
++.sidebar-brand .admin-brand-image{display:block;width:min(190px,100%);height:auto;max-height:46px;object-fit:contain}
++.sidebar-brand-caption{font-size:8px;letter-spacing:1.4px;font-weight:700;color:#a9ccf5}
++.mobile-brand{gap:0;font-size:0;letter-spacing:0}
++.mobile-brand .admin-brand-image{display:block;width:145px;height:auto;max-height:34px;object-fit:contain}
++@media(max-width:720px){.sidebar-brand{display:none}.mobile-brand{display:flex;align-items:center}.mobile-brand .admin-brand-image{width:min(145px,40vw)}}
++
++/* Admin dashboard contrast and logo visibility */
++:root{color-scheme:light;--ink:#172033;--muted:#626d7d;--line:#e2e5e9;--paper:#f5f6f8;--white:#fff;--green:#0058c8;--green-dark:#172033;--soft:#eef0f3;--red:#a13d36;--shadow:0 16px 42px #1720330c}
++html,body{max-width:100%;overflow-x:clip}
++.app-shell,.main-column,.content-wrap,.inbox-section,.page-heading{min-width:0;max-width:100%}
++.sidebar{background:#fff;color:#172033;border-right:1px solid #e3e6ea;box-shadow:2px 0 12px #17203308}
++.sidebar-brand{align-items:flex-start;color:#172033}
++.sidebar-brand .admin-brand-image{filter:none;width:min(190px,100%);max-height:44px}
++.sidebar-brand-caption{color:#687386}
++.sidebar-bottom{border-top-color:#e5e7eb;color:#626d7d}
++.side-link{color:#475467}
++.side-link span{color:#667085}
++.side-link:hover{background:#f4f5f7;color:#172033}
++.side-link:hover span{color:#0058c8}
++.side-link.selected{background:#eaf3ff;color:#0058c8;box-shadow:inset 3px 0 #0058c8;font-weight:700}
++.side-link.selected span{color:#0058c8}
++.topbar{background:#fff;border-bottom-color:#e2e5e9}
++.login-shell{background:#f5f6f8}
++.login-card,.stat-card,.inbox-section{background:#fff;border-color:#e2e5e9}
++.login-card input,.filter-select select,.search-box input,.dialog-actions select{border-color:#d8dde4;color:#172033}
++.login-card input:focus,.filter-select select:focus,.search-box:focus-within,.dialog-actions select:focus{border-color:#0058c8;box-shadow:0 0 0 3px #0058c81a}
++.eyebrow,.stat-label,.stat-foot,.detail-label{color:#626d7d}
++.today-pill,.empty-icon{background:#f0f2f5;color:#475467}
++.enquiry-table th{background:#f7f8fa;color:#626d7d}
++.enquiry-table td{border-top-color:#eceef1;color:#475467}
++.enquiry-table tbody tr:hover{background:#f8f9fb}
++.view-button,.detail-value a{color:#0058c8}
++.view-button:hover,.detail-value a:hover{color:#00479f}
++.primary-button{background:#0058c8;color:#fff}
++.primary-button:hover{background:#004eaf;box-shadow:0 7px 18px #0058c829}
++.button:not(.primary-button):hover,.icon-button:hover,.pager-button:hover{background:#f0f2f5}
++button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid #0058c8;outline-offset:2px}
++.delete-button{color:#a13d36;border-color:#ead0ce}
++.delete-button:hover{background:#fff5f4;border-color:#d8aaa6}
++.detail-dialog{background:#fff;border-color:#e2e5e9}
++.detail-dialog::backdrop{background:#17203378}
++.status-NEW{color:#855900;background:#fff3d2}
++.status-CONTACTED{color:#174f9d;background:#e6f0ff}
++.status-CONVERTED{color:#236146;background:#e7f4eb}
++.status-CLOSED{color:#596879;background:#edf1f6}
++.form-message[data-state="success"]{color:#236146}
++.form-message[data-state="error"]{color:#a13d36}
++@media(max-width:720px){.sidebar{background:#fff;border-top-color:#e2e5e9;box-shadow:0 -2px 12px #17203308}.side-link.selected{box-shadow:inset 0 3px #0058c8}.mobile-brand .admin-brand-image{filter:none}}
+ @media(max-width:480px){.content-wrap{padding-inline:12px}.stat-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.stat-card{min-width:0;padding:12px}.stat-label{overflow-wrap:anywhere}.filter-bar{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px;padding-inline:12px}.search-box{grid-column:1/-1;width:100%;max-width:none;min-width:0}.filter-select{width:auto;min-width:0}.filter-select select{min-width:0;padding-inline:8px}.refresh-button{grid-column:1/-1;justify-self:end;max-width:100%}.inbox-heading{padding-inline:12px}.detail-dialog{width:calc(100% - 20px);padding-inline:14px}.dialog-actions select{min-width:0}}
+ @media(max-width:720px){.topbar{gap:10px;padding-inline:14px}}
+ @media(max-width:400px){.topbar{gap:7px;padding-inline:12px}.admin-email{max-width:70px}.logout-button{gap:4px;padding-inline:7px}}
++
++.status-IN_PROGRESS { background: #e9efff; color: #294eb0; }
++.table-wrap { position: relative; }
+--- a/backend/src/main/resources/static/admin/admin.js
++++ b/backend/src/main/resources/static/admin/admin.js
+@@ -79,7 +79,7 @@
+ }
+ 
+ function readableStatus(status) {
+-  return status.charAt(0) + status.slice(1).toLowerCase();
++  return status.split('_').map(word => word.charAt(0) + word.slice(1).toLowerCase()).join(' ');
+ }
+ 
+ function formatDate(value) {
+@@ -147,6 +147,7 @@
+     document.querySelector('#stat-total').textContent = summary.totalEnquiries;
+     document.querySelector('#stat-new').textContent = summary.enquiriesByStatus.NEW || 0;
+     document.querySelector('#stat-contacted').textContent = summary.enquiriesByStatus.CONTACTED || 0;
++    document.querySelector('#stat-in-progress').textContent = summary.enquiriesByStatus.IN_PROGRESS || 0;
+     document.querySelector('#stat-converted').textContent = summary.enquiriesByStatus.CONVERTED || 0;
+     document.querySelector('#stat-closed').textContent = summary.enquiriesByStatus.CLOSED || 0;
+     renderEnquiries(pageData);
+@@ -173,6 +174,8 @@
+ async function openEnquiry(id) {
+   setMessage(detailMessage, 'Loading enquiry…');
+   activeEnquiryId = id;
++  document.querySelector('#retry-notification').disabled = true;
++  document.querySelector('#detail-content').replaceChildren();
+   detailDialog.showModal();
+   try {
+     const item = await apiRequest(`/api/admin/enquiries/${id}`);
+@@ -187,6 +190,10 @@
+     addDetailField(grid, 'SERVICE REQUIRED', item.service);
+     addDetailField(grid, 'RECEIVED', formatDate(item.createdAt));
+     addDetailField(grid, 'MESSAGE', item.message, { full: true });
++    addDetailField(grid, 'EMAIL NOTIFICATION', readableStatus(item.notificationStatus));
++    addDetailField(grid, 'LAST EMAIL ATTEMPT', formatDate(item.notificationAttemptedAt));
++    if (item.notificationError) addDetailField(grid, 'EMAIL DELIVERY NOTE', item.notificationError, { full: true });
++    document.querySelector('#retry-notification').disabled = item.notificationStatus === 'SENT';
+     content.append(grid);
+     document.querySelector('#detail-status').value = item.status;
+     setMessage(detailMessage, '');
+@@ -311,4 +318,21 @@
+   }
+ });
+ 
++document.querySelector('#retry-notification').addEventListener('click', async event => {
++  if (!activeEnquiryId) return;
++  const button = event.currentTarget;
++  button.disabled = true;
++  try {
++    const item = await apiRequest(`/api/admin/enquiries/${activeEnquiryId}/notification/retry`, { method: 'POST' });
++    detailDialog.close();
++    await openEnquiry(item.id);
++    setMessage(detailMessage, item.notificationStatus === 'SENT' ? 'Email accepted by the provider.' :
++      'Email was not sent. Your enquiry remains saved. Check the delivery note and backend configuration.',
++      item.notificationStatus === 'SENT' ? 'success' : 'error');
++  } catch (error) {
++    setMessage(detailMessage, error.message, 'error');
++    button.disabled = false;
++  }
++});
++
+ initialize();
+--- a/backend/src/main/resources/static/admin/index.html
++++ b/backend/src/main/resources/static/admin/index.html
+@@ -1,95 +1,96 @@
+-<!doctype html>
+-<html lang="en">
+-<head>
+-  <meta charset="utf-8">
+-  <meta name="viewport" content="width=device-width, initial-scale=1">
+-  <meta name="robots" content="noindex, nofollow">
+-  <meta name="theme-color" content="#f5f6f8">
+-  <title>Admin dashboard · Clarigence</title>
+-  <link rel="stylesheet" href="/admin/admin.css">
+-  <script src="/admin/admin.js" defer></script>
+-  <script src="/admin/cms-admin.js" defer></script>
++<!doctype html>
++<html lang="en">
++<head>
++  <meta charset="utf-8">
++  <meta name="viewport" content="width=device-width, initial-scale=1">
++  <meta name="robots" content="noindex, nofollow">
++  <meta name="theme-color" content="#f5f6f8">
++  <title>Admin dashboard · Clarigence</title>
++  <link rel="stylesheet" href="/admin/admin.css">
++  <script src="/admin/admin.js" defer></script>
++  <script src="/admin/cms-admin.js" defer></script>
+   <link rel="icon" type="image/x-icon" href="/admin/favicon.ico?v=2">
+   <link rel="icon" type="image/png" sizes="16x16" href="/admin/images/favicons/favicon-16.png?v=2">
+   <link rel="icon" type="image/png" sizes="32x32" href="/admin/images/favicons/favicon-32.png?v=2">
+   <link rel="icon" type="image/png" sizes="48x48" href="/admin/images/favicons/favicon-48.png?v=2">
+   <link rel="icon" type="image/png" sizes="64x64" href="/admin/images/favicons/favicon.png?v=2">
+-</head>
+-<body>
+-  <main id="login-view" class="login-shell" hidden>
+-    <a class="login-brand" href="/admin/" aria-label="Clarigence admin"><img class="admin-brand-image" src="/admin/images/clarigence-logo.png" alt="Clarigence"></a>
+-    <section class="login-card" aria-labelledby="login-title">
+-      <p class="eyebrow">ADMINISTRATION</p>
+-      <h1 id="login-title">Welcome back.</h1>
+-      <p class="login-copy">Sign in to manage your enquiries and website content.</p>
+-      <form id="login-form">
+-        <label for="login-email">Admin email</label>
+-        <input id="login-email" name="email" type="email" autocomplete="username" required maxlength="254" placeholder="you@company.com">
+-        <label for="login-password">Password</label>
+-        <input id="login-password" name="password" type="password" autocomplete="current-password" required maxlength="72" placeholder="Your password">
+-        <button class="button primary-button" type="submit">Sign in <span aria-hidden="true">↗</span></button>
+-        <p id="login-message" class="form-message" role="status" aria-live="polite"></p>
+-      </form>
+-    </section>
+-    <p class="login-foot">Clarigence · Internal workspace</p>
+-  </main>
+-
+-  <div id="dashboard-view" class="app-shell" hidden>
+-    <aside class="sidebar">
+-      <a class="sidebar-brand" href="/admin/" aria-label="Clarigence admin home"><img class="admin-brand-image" src="/admin/images/clarigence-logo.png" alt="Clarigence"><small class="sidebar-brand-caption">ADMIN WORKSPACE</small></a>
+-      <nav class="side-nav" aria-label="Admin navigation">
+-        <a class="side-link selected" href="#overview" aria-current="page"><span aria-hidden="true">◫</span> Overview</a>
+-        <a class="side-link" href="#enquiries"><span aria-hidden="true">▤</span> Enquiries</a>
+-      </nav>
+-      <div class="sidebar-bottom"><span class="secure-dot"></span><span>Private admin area</span></div>
+-    </aside>
+-
+-    <div class="main-column">
+-      <header class="topbar">
+-        <div class="mobile-brand"><img class="admin-brand-image" src="/admin/images/clarigence-logo.png" alt="Clarigence"></div>
+-        <div class="topbar-spacer"></div>
+-        <span id="admin-email" class="admin-email"></span>
+-        <button id="logout-button" class="logout-button" type="button">Sign out <span aria-hidden="true">↗</span></button>
+-      </header>
+-
+-      <div class="content-wrap">
+-        <section id="overview" class="page-heading">
+-          <div><p class="eyebrow">CLARIGENCE · INBOX</p><h1>Enquiry overview</h1><p class="page-subtitle">A clear view of every new conversation.</p></div>
+-          <span class="today-pill"><span class="secure-dot"></span> Private workspace</span>
+-        </section>
+-
+-        <section class="stat-grid" aria-label="Enquiry totals">
+-          <article class="stat-card total-card"><span class="stat-label">TOTAL ENQUIRIES</span><div class="stat-value" id="stat-total">—</div><span class="stat-foot">All website enquiries</span></article>
+-          <article class="stat-card"><span class="stat-label"><i class="status-dot new-dot"></i> NEW</span><div class="stat-value" id="stat-new">—</div><span class="stat-foot">Awaiting first contact</span></article>
+-          <article class="stat-card"><span class="stat-label"><i class="status-dot contacted-dot"></i> CONTACTED</span><div class="stat-value" id="stat-contacted">—</div><span class="stat-foot">In progress</span></article>
+-          <article class="stat-card"><span class="stat-label"><i class="status-dot converted-dot"></i> CONVERTED</span><div class="stat-value" id="stat-converted">—</div><span class="stat-foot">Won opportunities</span></article>
+-          <article class="stat-card"><span class="stat-label"><i class="status-dot closed-dot"></i> CLOSED</span><div class="stat-value" id="stat-closed">—</div><span class="stat-foot">Completed or archived</span></article>
+-        </section>
+-
+-        <section id="enquiries" class="inbox-section" aria-labelledby="inbox-title">
+-          <div class="inbox-heading"><div><p class="eyebrow">YOUR CONTACT FORM</p><h2 id="inbox-title">Enquiries</h2></div><span id="result-count" class="result-count"></span></div>
+-          <div class="filter-bar">
+-            <label class="search-box"><span aria-hidden="true">⌕</span><span class="sr-only">Search enquiries</span><input id="search-input" type="search" placeholder="Search name, email, company…" autocomplete="off"></label>
+-            <label class="filter-select"><span class="sr-only">Filter by status</span><select id="status-filter"><option value="">All statuses</option><option value="NEW">New</option><option value="CONTACTED">Contacted</option><option value="CONVERTED">Converted</option><option value="CLOSED">Closed</option></select></label>
+-            <button id="refresh-button" class="refresh-button" type="button"><span aria-hidden="true">↻</span> Refresh</button>
+-          </div>
+-          <div class="table-wrap">
+-            <table class="enquiry-table"><thead><tr><th scope="col">CONTACT</th><th scope="col">SERVICE</th><th scope="col">RECEIVED</th><th scope="col">STATUS</th><th scope="col"><span class="sr-only">Actions</span></th></tr></thead><tbody id="enquiry-rows"></tbody></table>
+-            <div id="empty-state" class="empty-state" hidden><span class="empty-icon" aria-hidden="true">✳</span><h3>No enquiries here yet.</h3><p>New website enquiries will appear here.</p></div>
+-          </div>
+-          <div class="table-footer"><span id="pagination-label">Page 1</span><div><button id="previous-page" class="pager-button" type="button" aria-label="Previous page">←</button><button id="next-page" class="pager-button" type="button" aria-label="Next page">→</button></div></div>
+-          <p id="dashboard-message" class="dashboard-message" role="status" aria-live="polite"></p>
+-        </section>
+-        <footer class="app-footer"><span>Clarigence Admin</span><span>Enquiry data is visible to authorized administrators only.</span></footer>
+-      </div>
+-    </div>
+-  </div>
+-
+-  <dialog id="detail-dialog" class="detail-dialog" aria-labelledby="detail-title">
+-    <div class="dialog-top"><div><p class="eyebrow">ENQUIRY DETAILS</p><h2 id="detail-title">Contact enquiry</h2></div><button id="close-detail" class="icon-button" type="button" aria-label="Close enquiry details">×</button></div>
+-    <div id="detail-content" class="detail-content"></div>
+-    <div class="dialog-actions"><label for="detail-status">Update status</label><select id="detail-status"><option value="NEW">New</option><option value="CONTACTED">Contacted</option><option value="CONVERTED">Converted</option><option value="CLOSED">Closed</option></select><button id="save-status" class="button primary-button" type="button">Save status</button><button id="delete-enquiry" class="delete-button" type="button">Delete enquiry</button></div>
+-    <p id="detail-message" class="form-message" role="status" aria-live="polite"></p>
+-  </dialog>
+-</body>
+-</html>
++</head>
++<body>
++  <main id="login-view" class="login-shell" hidden>
++    <a class="login-brand" href="/admin/" aria-label="Clarigence admin"><img class="admin-brand-image" src="/admin/images/clarigence-logo.png" alt="Clarigence"></a>
++    <section class="login-card" aria-labelledby="login-title">
++      <p class="eyebrow">ADMINISTRATION</p>
++      <h1 id="login-title">Welcome back.</h1>
++      <p class="login-copy">Sign in to manage your enquiries and website content.</p>
++      <form id="login-form">
++        <label for="login-email">Admin email</label>
++        <input id="login-email" name="email" type="email" autocomplete="username" required maxlength="254" placeholder="you@company.com">
++        <label for="login-password">Password</label>
++        <input id="login-password" name="password" type="password" autocomplete="current-password" required maxlength="72" placeholder="Your password">
++        <button class="button primary-button" type="submit">Sign in <span aria-hidden="true">↗</span></button>
++        <p id="login-message" class="form-message" role="status" aria-live="polite"></p>
++      </form>
++    </section>
++    <p class="login-foot">Clarigence · Internal workspace</p>
++  </main>
++
++  <div id="dashboard-view" class="app-shell" hidden>
++    <aside class="sidebar">
++      <a class="sidebar-brand" href="/admin/" aria-label="Clarigence admin home"><img class="admin-brand-image" src="/admin/images/clarigence-logo.png" alt="Clarigence"><small class="sidebar-brand-caption">ADMIN WORKSPACE</small></a>
++      <nav class="side-nav" aria-label="Admin navigation">
++        <a class="side-link selected" href="#overview" aria-current="page"><span aria-hidden="true">◫</span> Overview</a>
++        <a class="side-link" href="#enquiries"><span aria-hidden="true">▤</span> Enquiries</a>
++      </nav>
++      <div class="sidebar-bottom"><span class="secure-dot"></span><span>Private admin area</span></div>
++    </aside>
++
++    <div class="main-column">
++      <header class="topbar">
++        <div class="mobile-brand"><img class="admin-brand-image" src="/admin/images/clarigence-logo.png" alt="Clarigence"></div>
++        <div class="topbar-spacer"></div>
++        <span id="admin-email" class="admin-email"></span>
++        <button id="logout-button" class="logout-button" type="button">Sign out <span aria-hidden="true">↗</span></button>
++      </header>
++
++      <div class="content-wrap">
++        <section id="overview" class="page-heading">
++          <div><p class="eyebrow">CLARIGENCE · INBOX</p><h1>Enquiry overview</h1><p class="page-subtitle">A clear view of every new conversation.</p></div>
++          <span class="today-pill"><span class="secure-dot"></span> Private workspace</span>
++        </section>
++
++        <section class="stat-grid" aria-label="Enquiry totals">
++          <article class="stat-card total-card"><span class="stat-label">TOTAL ENQUIRIES</span><div class="stat-value" id="stat-total">—</div><span class="stat-foot">All website enquiries</span></article>
++          <article class="stat-card"><span class="stat-label"><i class="status-dot new-dot"></i> NEW</span><div class="stat-value" id="stat-new">—</div><span class="stat-foot">Awaiting first contact</span></article>
++          <article class="stat-card"><span class="stat-label"><i class="status-dot contacted-dot"></i> CONTACTED</span><div class="stat-value" id="stat-contacted">—</div><span class="stat-foot">In progress</span></article>
++          <article class="stat-card"><span class="stat-label">IN PROGRESS</span><div class="stat-value" id="stat-in-progress">&mdash;</div><span class="stat-foot">Active discussions</span></article>
++          <article class="stat-card"><span class="stat-label"><i class="status-dot converted-dot"></i> CONVERTED</span><div class="stat-value" id="stat-converted">—</div><span class="stat-foot">Won opportunities</span></article>
++          <article class="stat-card"><span class="stat-label"><i class="status-dot closed-dot"></i> CLOSED</span><div class="stat-value" id="stat-closed">—</div><span class="stat-foot">Completed or archived</span></article>
++        </section>
++
++        <section id="enquiries" class="inbox-section" aria-labelledby="inbox-title">
++          <div class="inbox-heading"><div><p class="eyebrow">YOUR CONTACT FORM</p><h2 id="inbox-title">Enquiries</h2></div><span id="result-count" class="result-count"></span></div>
++          <div class="filter-bar">
++            <label class="search-box"><span aria-hidden="true">⌕</span><span class="sr-only">Search enquiries</span><input id="search-input" type="search" placeholder="Search name, email, company…" autocomplete="off"></label>
++            <label class="filter-select"><span class="sr-only">Filter by status</span><select id="status-filter"><option value="">All statuses</option><option value="NEW">New</option><option value="CONTACTED">Contacted</option><option value="IN_PROGRESS">In Progress</option><option value="CONVERTED">Converted</option><option value="CLOSED">Closed</option></select></label>
++            <button id="refresh-button" class="refresh-button" type="button"><span aria-hidden="true">↻</span> Refresh</button>
++          </div>
++          <div class="table-wrap">
++            <table class="enquiry-table"><thead><tr><th scope="col">CONTACT</th><th scope="col">SERVICE</th><th scope="col">RECEIVED</th><th scope="col">STATUS</th><th scope="col"><span class="sr-only">Actions</span></th></tr></thead><tbody id="enquiry-rows"></tbody></table>
++            <div id="empty-state" class="empty-state" hidden><span class="empty-icon" aria-hidden="true">✳</span><h3>No enquiries here yet.</h3><p>New website enquiries will appear here.</p></div>
++          </div>
++          <div class="table-footer"><span id="pagination-label">Page 1</span><div><button id="previous-page" class="pager-button" type="button" aria-label="Previous page">←</button><button id="next-page" class="pager-button" type="button" aria-label="Next page">→</button></div></div>
++          <p id="dashboard-message" class="dashboard-message" role="status" aria-live="polite"></p>
++        </section>
++        <footer class="app-footer"><span>Clarigence Admin</span><span>Enquiry data is visible to authorized administrators only.</span></footer>
++      </div>
++    </div>
++  </div>
++
++  <dialog id="detail-dialog" class="detail-dialog" aria-labelledby="detail-title">
++    <div class="dialog-top"><div><p class="eyebrow">ENQUIRY DETAILS</p><h2 id="detail-title">Contact enquiry</h2></div><button id="close-detail" class="icon-button" type="button" aria-label="Close enquiry details">×</button></div>
++    <div id="detail-content" class="detail-content"></div>
++    <div class="dialog-actions"><label for="detail-status">Update status</label><select id="detail-status"><option value="NEW">New</option><option value="CONTACTED">Contacted</option><option value="IN_PROGRESS">In Progress</option><option value="CONVERTED">Converted</option><option value="CLOSED">Closed</option></select><button id="save-status" class="button primary-button" type="button">Save status</button><button id="retry-notification" class="button" type="button" disabled>Retry email notification</button><button id="delete-enquiry" class="delete-button" type="button">Delete enquiry</button></div>
++    <p id="detail-message" class="form-message" role="status" aria-live="polite"></p>
++  </dialog>
++</body>
++</html>
+--- a/backend/src/test/java/in/clarigence/contactapi/ContactControllerIntegrationTest.java
++++ b/backend/src/test/java/in/clarigence/contactapi/ContactControllerIntegrationTest.java
+@@ -1,75 +1,89 @@
+-package in.clarigence.contactapi;
+-
+-import static org.hamcrest.Matchers.matchesPattern;
+-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.options;
+-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
+-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+-
+-import org.junit.jupiter.api.Test;
+-import org.springframework.beans.factory.annotation.Autowired;
+-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+-import org.springframework.boot.test.context.SpringBootTest;
+-import org.springframework.http.MediaType;
+-import org.springframework.test.context.ActiveProfiles;
+-import org.springframework.test.web.servlet.MockMvc;
+-
+-@SpringBootTest
+-@AutoConfigureMockMvc
+-@ActiveProfiles("test")
+-class ContactControllerIntegrationTest {
+-
+-    @Autowired
+-    private MockMvc mockMvc;
+-
+-    @Test
+-    void createsContactAndReturnsCreatedTimestamp() throws Exception {
+-        mockMvc.perform(post("/api/contact")
+-                        .contentType(MediaType.APPLICATION_JSON)
+-                        .content("""
+-                                {
+-                                  "name": "Taylor Example",
+-                                  "email": "taylor@example.com",
+-                                  "phone": "+1 555 0100",
+-                                  "company": "Example Studio",
+-                                  "service": "Web development",
+-                                  "message": "We need a new company website."
+-                                }
+-                                """))
+-                .andExpect(status().isCreated())
+-                .andExpect(jsonPath("$.id").isNumber())
+-                .andExpect(jsonPath("$.message").value("Your enquiry has been received."))
+-                .andExpect(jsonPath("$.createdAt", matchesPattern(".+Z$")));
+-    }
+-
+-    @Test
+-    void rejectsInvalidFieldsWithJsonErrors() throws Exception {
+-        mockMvc.perform(post("/api/contact")
+-                        .contentType(MediaType.APPLICATION_JSON)
+-                        .content("""
+-                                {
+-                                  "name": " ",
+-                                  "email": "not-an-email",
+-                                  "phone": "",
+-                                  "company": "",
+-                                  "service": "Web development",
+-                                  "message": "Short"
+-                                }
+-                                """))
+-                .andExpect(status().isBadRequest())
+-                .andExpect(jsonPath("$.status").value(400))
+-                .andExpect(jsonPath("$.fieldErrors.name").exists())
+-                .andExpect(jsonPath("$.fieldErrors.email").exists())
+-                .andExpect(jsonPath("$.fieldErrors.message").exists());
+-    }
+-
+-    @Test
+-    void allowsFrontendCorsOrigin() throws Exception {
+-        mockMvc.perform(options("/api/contact")
+-                        .header("Origin", "http://localhost:8000")
+-                        .header("Access-Control-Request-Method", "POST"))
+-                .andExpect(status().isOk())
+-                .andExpect(header().string("Access-Control-Allow-Origin", "http://localhost:8000"));
+-    }
+-}
++package in.clarigence.contactapi;
++
++import static org.hamcrest.Matchers.matchesPattern;
++import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.options;
++import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
++import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
++import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
++import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
++
++import org.junit.jupiter.api.Test;
++import org.springframework.beans.factory.annotation.Autowired;
++import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
++import org.springframework.boot.test.context.SpringBootTest;
++import org.springframework.http.MediaType;
++import org.springframework.test.context.ActiveProfiles;
++import org.springframework.test.web.servlet.MockMvc;
++
++@SpringBootTest
++@AutoConfigureMockMvc
++@ActiveProfiles("test")
++class ContactControllerIntegrationTest {
++
++    @Autowired
++    private MockMvc mockMvc;
++
++    @Test
++    void createsContactAndReturnsCreatedTimestamp() throws Exception {
++        mockMvc.perform(post("/api/contact")
++                        .contentType(MediaType.APPLICATION_JSON)
++                        .content("""
++                                {
++                                  "name": "Taylor Example",
++                                  "email": "taylor@example.com",
++                                  "phone": "+1 555 0100",
++                                  "company": "Example Studio",
++                                  "service": "Web development",
++                                  "message": "We need a new company website."
++                                }
++                                """))
++                .andExpect(status().isCreated())
++                .andExpect(jsonPath("$.id").isNumber())
++                .andExpect(jsonPath("$.message").value("Your enquiry has been received."))
++                .andExpect(jsonPath("$.createdAt", matchesPattern(".+Z$")));
++    }
++
++    @Test
++    void rejectsInvalidFieldsWithJsonErrors() throws Exception {
++        mockMvc.perform(post("/api/contact")
++                        .contentType(MediaType.APPLICATION_JSON)
++                        .content("""
++                                {
++                                  "name": " ",
++                                  "email": "not-an-email",
++                                  "phone": "",
++                                  "company": "",
++                                  "service": "Web development",
++                                  "message": "Short"
++                                }
++                                """))
++                .andExpect(status().isBadRequest())
++                .andExpect(jsonPath("$.status").value(400))
++                .andExpect(jsonPath("$.fieldErrors.name").exists())
++                .andExpect(jsonPath("$.fieldErrors.email").exists())
++                .andExpect(jsonPath("$.fieldErrors.message").exists());
++    }
++
++    @Test
++    void validatesTrimmedMessageAndAllowsIdempotencyCorsHeader() throws Exception {
++        mockMvc.perform(post("/api/contact").contentType(MediaType.APPLICATION_JSON).content("""
++                {"name":"Taylor", "email":"taylor@example.com", "service":"Website Development",
++                 "message":"x          "}
++                """))
++                .andExpect(status().isBadRequest()).andExpect(jsonPath("$.fieldErrors.message").exists());
++        mockMvc.perform(options("/api/contact").header("Origin", "http://localhost:8000")
++                .header("Access-Control-Request-Method", "POST")
++                .header("Access-Control-Request-Headers", "content-type,idempotency-key"))
++                .andExpect(status().isOk())
++                .andExpect(header().string("Access-Control-Allow-Headers", org.hamcrest.Matchers.containsString("idempotency-key")));
++    }
++
++    @Test
++    void allowsFrontendCorsOrigin() throws Exception {
++        mockMvc.perform(options("/api/contact")
++                        .header("Origin", "http://localhost:8000")
++                        .header("Access-Control-Request-Method", "POST"))
++                .andExpect(status().isOk())
++                .andExpect(header().string("Access-Control-Allow-Origin", "http://localhost:8000"));
++    }
++}
+--- /dev/null
++++ b/backend/src/test/java/in/clarigence/contactapi/EnquiryDowntimeIntegrationTest.java
+@@ -0,0 +1,30 @@
++package in.clarigence.contactapi;
++
++import in.clarigence.contactapi.repository.ContactRepository;
++import org.junit.jupiter.api.Test;
++import org.springframework.beans.factory.annotation.Autowired;
++import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
++import org.springframework.boot.test.context.SpringBootTest;
++import org.springframework.test.context.ActiveProfiles;
++import org.springframework.test.context.bean.override.mockito.MockitoBean;
++import org.springframework.test.web.servlet.MockMvc;
++import static org.mockito.ArgumentMatchers.any;
++import static org.mockito.Mockito.*;
++import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
++import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
++
++@SpringBootTest
++@AutoConfigureMockMvc
++@ActiveProfiles("test")
++class EnquiryDowntimeIntegrationTest {
++    @Autowired MockMvc mvc;
++    @MockitoBean ContactRepository contacts;
++    @Test void databaseFailureReturnsRealServiceUnavailable() throws Exception {
++        when(contacts.saveAndFlush(any())).thenThrow(new org.springframework.dao.DataAccessResourceFailureException("offline"));
++        mvc.perform(post("/api/contact").contentType("application/json").content("""
++                {"name":"Downtime Test","email":"test@example.com","service":"Website Development",
++                 "message":"This enquiry must not report success."}
++                """))
++                .andExpect(status().isServiceUnavailable()).andExpect(jsonPath("$.id").doesNotExist());
++    }
++}
+--- a/backend/src/test/java/in/clarigence/contactapi/EnquiryEmailIntegrationTest.java
++++ b/backend/src/test/java/in/clarigence/contactapi/EnquiryEmailIntegrationTest.java
+@@ -4,6 +4,11 @@
+ import static org.mockito.ArgumentMatchers.any;
+ import static org.mockito.Mockito.doThrow;
+ import static org.mockito.Mockito.verify;
++import static org.mockito.Mockito.reset;
++import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
++import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
++import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
++import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
+ import static org.mockito.Mockito.verifyNoInteractions;
+ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+@@ -86,6 +91,63 @@
+     }
+ 
+     @Test
++    void failedNotificationCanBeRetriedByAdminOnly() throws Exception {
++        doThrow(new MailSendException("private-secret")).when(sender).send(any(SimpleMailMessage.class));
++        var result = mvc.perform(post("/api/contact").contentType(MediaType.APPLICATION_JSON).content(REQUEST))
++                .andExpect(status().isCreated()).andReturn();
++        long id = new com.fasterxml.jackson.databind.ObjectMapper().readTree(result.getResponse().getContentAsString()).get("id").asLong();
++        assertThat(contacts.findById(id).orElseThrow().getNotificationStatus()).isEqualTo("FAILED");
++        mvc.perform(post("/api/admin/enquiries/{id}/notification/retry", id).with(csrf()))
++                .andExpect(status().isUnauthorized());
++        mvc.perform(post("/api/admin/enquiries/{id}/notification/retry", id).with(user("admin").roles("ADMIN")))
++                .andExpect(status().isForbidden());
++        reset(sender);
++        mvc.perform(post("/api/admin/enquiries/{id}/notification/retry", id).with(user("admin").roles("ADMIN")).with(csrf()))
++                .andExpect(status().isOk()).andExpect(jsonPath("$.notificationStatus").value("SENT"));
++        verify(sender).send(any(SimpleMailMessage.class));
++        reset(sender);
++        mvc.perform(post("/api/admin/enquiries/{id}/notification/retry", id).with(user("admin").roles("ADMIN")).with(csrf()))
++                .andExpect(status().isOk());
++        verifyNoInteractions(sender);
++        mvc.perform(get("/api/admin/enquiries/{id}", id).with(user("admin").roles("ADMIN")))
++                .andExpect(status().isOk()).andExpect(jsonPath("$.notificationAttemptedAt").exists());
++    }
++
++    @Test
++    void retryingSameSubmissionDoesNotSendTwice() throws Exception {
++        String key = java.util.UUID.randomUUID().toString();
++        long before = contacts.count();
++        for (int i = 0; i < 2; i++) mvc.perform(post("/api/contact").header("Idempotency-Key", key)
++                .contentType(MediaType.APPLICATION_JSON).content(REQUEST)).andExpect(status().isCreated());
++        assertThat(contacts.count()).isEqualTo(before + 1);
++        verify(sender).send(any(SimpleMailMessage.class));
++        mvc.perform(post("/api/contact").header("Idempotency-Key", key).contentType(MediaType.APPLICATION_JSON)
++                .content(REQUEST.replace("Taylor Example", "Changed Name"))).andExpect(status().isConflict());
++    }
++
++    @Test
++    void concurrentDuplicateRequestsSaveAndNotifyOnce() throws Exception {
++        String key = java.util.UUID.randomUUID().toString();
++        long before = contacts.count();
++        try (var executor = java.util.concurrent.Executors.newFixedThreadPool(2)) {
++            var start = new java.util.concurrent.CountDownLatch(1);
++            java.util.concurrent.Callable<Integer> submit = () -> {
++                start.await();
++                return mvc.perform(post("/api/contact").header("Idempotency-Key", key)
++                        .contentType(MediaType.APPLICATION_JSON).content(REQUEST))
++                        .andReturn().getResponse().getStatus();
++            };
++            var first = executor.submit(submit);
++            var second = executor.submit(submit);
++            start.countDown();
++            assertThat(first.get()).isEqualTo(201);
++            assertThat(second.get()).isEqualTo(201);
++        }
++        assertThat(contacts.count()).isEqualTo(before + 1);
++        verify(sender).send(any(SimpleMailMessage.class));
++    }
++
++    @Test
+     void rolledBackEnquiryDoesNotSendEmail() {
+         long before = contacts.count();
+         new TransactionTemplate(transactions).executeWithoutResult(transaction -> {
+--- /dev/null
++++ b/backend/src/test/java/in/clarigence/contactapi/EnquiryRestartPersistenceTest.java
+@@ -0,0 +1,34 @@
++package in.clarigence.contactapi;
++
++import in.clarigence.contactapi.entity.Contact;
++import in.clarigence.contactapi.repository.ContactRepository;
++import org.junit.jupiter.api.Test;
++import org.junit.jupiter.api.io.TempDir;
++import org.springframework.boot.builder.SpringApplicationBuilder;
++import org.springframework.context.ConfigurableApplicationContext;
++import java.nio.file.Path;
++import static org.assertj.core.api.Assertions.assertThat;
++
++class EnquiryRestartPersistenceTest {
++    @TempDir Path directory;
++    @Test void enquirySurvivesApplicationRestart() {
++        String url = "jdbc:h2:file:" + directory.resolve("persistent").toAbsolutePath().toString().replace('\\', '/')
++                + ";MODE=MySQL;DATABASE_TO_LOWER=TRUE";
++        Long id;
++        try (var app = start(url)) {
++            var contacts = app.getBean(ContactRepository.class);
++            id = contacts.saveAndFlush(new Contact("Restart Test", "restart@example.com", "+91 90000 00000",
++                    "Example", "Website Development", "Persist this enquiry across application restarts.")).getId();
++        }
++        try (var app = start(url)) {
++            var saved = app.getBean(ContactRepository.class).findById(id).orElseThrow();
++            assertThat(saved.getName()).isEqualTo("Restart Test");
++            assertThat(saved.getCreatedAt()).isNotNull();
++        }
++    }
++    private ConfigurableApplicationContext start(String url) {
++        return new SpringApplicationBuilder(ContactApiApplication.class).profiles("test").run(
++                "--server.port=0", "--spring.datasource.url=" + url,
++                "--spring.jpa.hibernate.ddl-auto=update", "--clarigence.enquiry-email.enabled=false");
++    }
++}

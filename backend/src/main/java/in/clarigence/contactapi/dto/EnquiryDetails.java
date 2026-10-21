@@ -13,11 +13,14 @@ public record EnquiryDetails(
         String service,
         String message,
         ContactStatus status,
-        Instant createdAt
+        Instant createdAt,
+        String notificationStatus,
+        Instant notificationAttemptedAt,
+        String notificationError
 ) {
     public static EnquiryDetails from(Contact contact) {
         return new EnquiryDetails(contact.getId(), contact.getName(), contact.getEmail(), contact.getPhone(),
                 contact.getCompany(), contact.getService(), contact.getMessage(), contact.getStatus(),
-                contact.getCreatedAt());
+                contact.getCreatedAt(), contact.getNotificationStatus(), contact.getNotificationAttemptedAt(), contact.getNotificationError());
     }
 }

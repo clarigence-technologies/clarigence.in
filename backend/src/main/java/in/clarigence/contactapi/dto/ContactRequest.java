@@ -29,4 +29,16 @@ public record ContactRequest(
         @Size(min = 10, max = 5000, message = "Message must be between 10 and 5000 characters.")
         String message
 ) {
+    public ContactRequest {
+        name = trim(name);
+        email = trim(email);
+        phone = trim(phone);
+        company = trim(company);
+        service = trim(service);
+        message = trim(message);
+    }
+
+    private static String trim(String value) {
+        return value == null ? null : value.trim();
+    }
 }

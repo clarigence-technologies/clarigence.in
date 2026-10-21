@@ -75,3 +75,6 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible{ou
 @media(max-width:480px){.content-wrap{padding-inline:12px}.stat-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.stat-card{min-width:0;padding:12px}.stat-label{overflow-wrap:anywhere}.filter-bar{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px;padding-inline:12px}.search-box{grid-column:1/-1;width:100%;max-width:none;min-width:0}.filter-select{width:auto;min-width:0}.filter-select select{min-width:0;padding-inline:8px}.refresh-button{grid-column:1/-1;justify-self:end;max-width:100%}.inbox-heading{padding-inline:12px}.detail-dialog{width:calc(100% - 20px);padding-inline:14px}.dialog-actions select{min-width:0}}
 @media(max-width:720px){.topbar{gap:10px;padding-inline:14px}}
 @media(max-width:400px){.topbar{gap:7px;padding-inline:12px}.admin-email{max-width:70px}.logout-button{gap:4px;padding-inline:7px}}
+
+.status-IN_PROGRESS { background: #e9efff; color: #294eb0; }
+.table-wrap { position: relative; }

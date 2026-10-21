@@ -93,6 +93,17 @@ public class ApiExceptionHandler {
                 "We could not save your enquiry right now. Please try again shortly.", request, Map.of());
     }
 
+    @ExceptionHandler(org.springframework.web.server.ResponseStatusException.class)
+    public ResponseEntity<ApiErrorResponse> handleResponseStatus(org.springframework.web.server.ResponseStatusException e, HttpServletRequest request) {
+        return response(HttpStatus.valueOf(e.getStatusCode().value()), e.getReason(), request, Map.of());
+    }
+
+    @ExceptionHandler({org.springframework.dao.DataAccessException.class, org.springframework.transaction.TransactionException.class})
+    public ResponseEntity<ApiErrorResponse> handleDatabaseUnavailable(Exception e, HttpServletRequest request) {
+        log.error("Database operation unavailable: {}", e.getClass().getSimpleName());
+        return response(HttpStatus.SERVICE_UNAVAILABLE, "The database is temporarily unavailable. Please try again shortly.", request, Map.of());
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiErrorResponse> handleUnexpected(
             Exception exception, HttpServletRequest request) {

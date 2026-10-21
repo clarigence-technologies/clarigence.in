@@ -11,6 +11,12 @@ import org.springframework.data.domain.Pageable;
 
 public interface ContactRepository extends JpaRepository<Contact, Long> {
 
+    @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT c FROM Contact c WHERE c.id = :id")
+    java.util.Optional<Contact> findForNotification(@Param("id") Long id);
+
+    java.util.Optional<Contact> findBySubmissionKey(String submissionKey);
+
     @Query("""
             SELECT c FROM Contact c
             WHERE (:status IS NULL OR c.status = :status)

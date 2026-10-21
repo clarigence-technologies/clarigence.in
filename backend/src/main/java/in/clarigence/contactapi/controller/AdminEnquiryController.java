@@ -27,9 +27,11 @@ import org.springframework.web.bind.annotation.RestController;
 public class AdminEnquiryController {
 
     private final AdminEnquiryService adminEnquiryService;
+    private final in.clarigence.contactapi.service.NotificationDeliveryService delivery;
 
-    public AdminEnquiryController(AdminEnquiryService adminEnquiryService) {
+    public AdminEnquiryController(AdminEnquiryService adminEnquiryService, in.clarigence.contactapi.service.NotificationDeliveryService delivery) {
         this.adminEnquiryService = adminEnquiryService;
+        this.delivery = delivery;
     }
 
     @GetMapping("/dashboard")
@@ -55,6 +57,11 @@ public class AdminEnquiryController {
     public EnquiryDetails updateStatus(@PathVariable @Min(1) Long id,
                                        @Valid @RequestBody ContactStatusRequest request) {
         return adminEnquiryService.updateStatus(id, request.status());
+    }
+
+    @org.springframework.web.bind.annotation.PostMapping("/enquiries/{id}/notification/retry")
+    public EnquiryDetails retryNotification(@PathVariable @Min(1) Long id) {
+        return delivery.deliver(id);
     }
 
     @DeleteMapping("/enquiries/{id}")

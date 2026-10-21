@@ -170,7 +170,7 @@ The admin dashboard uses an HttpOnly session cookie, BCrypt password hashes, ses
 - Dashboard totals for all enquiries and each status.
 - Search by name, email, company, service, or message; filter by status and paginate results.
 - View full enquiry details, including phone and message.
-- Set status to `NEW`, `CONTACTED`, `CONVERTED`, or `CLOSED`.
+- Set status to `NEW`, `CONTACTED`, `IN_PROGRESS`, or `CLOSED`; historical `CONVERTED` records and controls are retained.
 - Delete enquiries after an explicit confirmation.
 - Sign out to invalidate the current admin session.
 
@@ -193,7 +193,7 @@ cd /d C:\Users\prash\Desktop\clarigence.in
 py -m http.server 8000
 ```
 
-Visit http://localhost:8000 for the public site. The contact form posts to the backend and shows an inline result. If the API is hosted elsewhere, change `data-api-url` on the contact form in `contact.html` and add that frontend's exact origin to `CORS_ALLOWED_ORIGINS`.
+Visit http://localhost:8000 for the public site. The contact form posts to the backend and shows an inline result. If the API is hosted elsewhere, set `CLARIGENCE_API_BASE_URL` (or `CLARIGENCE_API_URL` ending in `/api/contact`) in the frontend build environment and add that frontend's exact origin to `CORS_ALLOWED_ORIGINS`.
 
 ## Build and test
 
@@ -259,7 +259,7 @@ Sending is attempted after the database transaction commits, before the HTTP
 request finishes, with SMTP timeouts configured as recommended by Spring Boot:
 https://docs.spring.io/spring-boot/reference/io/email.html
 Email failures are logged using the enquiry ID, while the form still returns
-success and the enquiry stays saved. There is currently no automatic email retry.
+success and the enquiry stays saved. The admin enquiry details show delivery state and a manual retry button. There is no automatic email retry.
 Notifications are disabled by default until SMTP is configured.
 
 ### Production email troubleshooting
@@ -295,3 +295,28 @@ only on Pro and above; Free, Trial and Hobby require an HTTPS email API:
 https://docs.railway.com/networking/outbound-networking
 An upgrade requires a backend redeployment. If SMTP is blocked, credentials or
 longer timeouts cannot fix it. Confirm the host/plan before changing the transport.
+
+
+## Enquiry reliability update (21 October 2026)
+
+See `ENQUIRY-DEPLOYMENT.md` in the website root for current outage findings,
+non-destructive migration, replacement hosting choices and the release checklist.
+
+- Public submissions may include an `Idempotency-Key` UUID header. The frontend
+  reuses it when retrying unchanged details in the same page. MySQL enforces a
+  unique nullable `contacts.submission_key`; legacy records remain valid.
+- `IN_PROGRESS` is added without removing historical `CONVERTED` values.
+- Delivery state (`NOT_ATTEMPTED`, `DISABLED`, `FAILED`, `SENT`), safe failure
+  diagnostics and last-attempt time appear in authenticated enquiry details.
+- `POST /api/admin/enquiries/{id}/notification/retry` uses the existing admin
+  session and CSRF token. Sent messages are not resent. Concurrent retries are
+  serialized by a database row lock. SMTP acceptance is not proof of inbox delivery.
+- New email attempts run after the enquiry commit, in a separate transaction.
+  Failure to send or update notification state cannot undo the saved enquiry or
+  turn its successful submission into an error. An interrupted attempt can be
+  retried manually. A crash after provider acceptance but before recording SENT
+  can result in a duplicate notification on retry; enquiry records are unaffected.
+- Notifications disabled on the host are recorded as DISABLED and can be retried
+  after configuring and enabling the existing SMTP or Resend provider.
+- The frontend never clears details on errors, stores enquiries in localStorage,
+  or declares success without HTTP 201 and a positive integer saved-record ID.

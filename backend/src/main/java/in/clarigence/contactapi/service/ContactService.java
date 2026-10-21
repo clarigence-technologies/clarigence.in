@@ -24,6 +24,11 @@ public class ContactService {
 
     @Transactional
     public ContactResponse create(ContactRequest request) {
+        return create(request, null);
+    }
+
+    @Transactional
+    public ContactResponse create(ContactRequest request, String submissionKey) {
         Contact contact = new Contact(
                 request.name().trim(),
                 request.email().trim().toLowerCase(Locale.ROOT),
@@ -33,6 +38,7 @@ public class ContactService {
                 request.message().trim()
         );
 
+        contact.setSubmissionKey(submissionKey);
         try {
             Contact saved = contactRepository.saveAndFlush(contact);
             events.publishEvent(new EnquiryCreated(saved));

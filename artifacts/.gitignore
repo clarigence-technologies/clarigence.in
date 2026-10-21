@@ -1,0 +1,14 @@
+﻿# Local working copies, backups and one-time repair helpers.
+/fix-work/
+/enquiry-source-backup/
+/apply-enquiry-changes.py
+/browser-debug.py
+/browser-update.py
+/dashboard-update.py
+/implement.py
+/persistence-test.py
+/prepare-enquiry-release.py
+/release-update.py
+/tests-update.py
+/validation-update.py
+/verify-enquiry-release.py

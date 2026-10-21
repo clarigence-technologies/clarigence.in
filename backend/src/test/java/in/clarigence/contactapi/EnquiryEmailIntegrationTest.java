@@ -4,6 +4,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.reset;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -83,6 +88,63 @@ class EnquiryEmailIntegrationTest {
         assertThat(contacts.count()).isEqualTo(before + 1);
         assertThat(output.getAll()).contains("saved successfully", "Email sending started", "Email sending failed",
                 "MailSendException", "timed out", "Enquiry remains saved").doesNotContain("private-provider-error-secret");
+    }
+
+    @Test
+    void failedNotificationCanBeRetriedByAdminOnly() throws Exception {
+        doThrow(new MailSendException("private-secret")).when(sender).send(any(SimpleMailMessage.class));
+        var result = mvc.perform(post("/api/contact").contentType(MediaType.APPLICATION_JSON).content(REQUEST))
+                .andExpect(status().isCreated()).andReturn();
+        long id = new com.fasterxml.jackson.databind.ObjectMapper().readTree(result.getResponse().getContentAsString()).get("id").asLong();
+        assertThat(contacts.findById(id).orElseThrow().getNotificationStatus()).isEqualTo("FAILED");
+        mvc.perform(post("/api/admin/enquiries/{id}/notification/retry", id).with(csrf()))
+                .andExpect(status().isUnauthorized());
+        mvc.perform(post("/api/admin/enquiries/{id}/notification/retry", id).with(user("admin").roles("ADMIN")))
+                .andExpect(status().isForbidden());
+        reset(sender);
+        mvc.perform(post("/api/admin/enquiries/{id}/notification/retry", id).with(user("admin").roles("ADMIN")).with(csrf()))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.notificationStatus").value("SENT"));
+        verify(sender).send(any(SimpleMailMessage.class));
+        reset(sender);
+        mvc.perform(post("/api/admin/enquiries/{id}/notification/retry", id).with(user("admin").roles("ADMIN")).with(csrf()))
+                .andExpect(status().isOk());
+        verifyNoInteractions(sender);
+        mvc.perform(get("/api/admin/enquiries/{id}", id).with(user("admin").roles("ADMIN")))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.notificationAttemptedAt").exists());
+    }
+
+    @Test
+    void retryingSameSubmissionDoesNotSendTwice() throws Exception {
+        String key = java.util.UUID.randomUUID().toString();
+        long before = contacts.count();
+        for (int i = 0; i < 2; i++) mvc.perform(post("/api/contact").header("Idempotency-Key", key)
+                .contentType(MediaType.APPLICATION_JSON).content(REQUEST)).andExpect(status().isCreated());
+        assertThat(contacts.count()).isEqualTo(before + 1);
+        verify(sender).send(any(SimpleMailMessage.class));
+        mvc.perform(post("/api/contact").header("Idempotency-Key", key).contentType(MediaType.APPLICATION_JSON)
+                .content(REQUEST.replace("Taylor Example", "Changed Name"))).andExpect(status().isConflict());
+    }
+
+    @Test
+    void concurrentDuplicateRequestsSaveAndNotifyOnce() throws Exception {
+        String key = java.util.UUID.randomUUID().toString();
+        long before = contacts.count();
+        try (var executor = java.util.concurrent.Executors.newFixedThreadPool(2)) {
+            var start = new java.util.concurrent.CountDownLatch(1);
+            java.util.concurrent.Callable<Integer> submit = () -> {
+                start.await();
+                return mvc.perform(post("/api/contact").header("Idempotency-Key", key)
+                        .contentType(MediaType.APPLICATION_JSON).content(REQUEST))
+                        .andReturn().getResponse().getStatus();
+            };
+            var first = executor.submit(submit);
+            var second = executor.submit(submit);
+            start.countDown();
+            assertThat(first.get()).isEqualTo(201);
+            assertThat(second.get()).isEqualTo(201);
+        }
+        assertThat(contacts.count()).isEqualTo(before + 1);
+        verify(sender).send(any(SimpleMailMessage.class));
     }
 
     @Test

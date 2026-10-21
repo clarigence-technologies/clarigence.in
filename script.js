@@ -104,6 +104,8 @@ document.querySelectorAll('.contact-form').forEach(form => {
       option.textContent.toLowerCase().replaceAll(' ', '-') === requested);
     if (match) form.elements.service.value = match.value;
   }
+  let submissionKey = null;
+  let submittedBody = null;
   form.noValidate = true;
   form.addEventListener('submit', async event => {
     event.preventDefault();
@@ -123,6 +125,11 @@ document.querySelectorAll('.contact-form').forEach(form => {
       invalid.focus();
       return;
     }
+    const body = JSON.stringify(Object.fromEntries(new FormData(form)));
+    if (body !== submittedBody || !submissionKey) {
+      submissionKey = crypto.randomUUID();
+      submittedBody = body;
+    }
     const original = button.innerHTML;
     button.disabled = true;
     button.textContent = 'Sending enquiry…';
@@ -135,8 +142,8 @@ document.querySelectorAll('.contact-form').forEach(form => {
       if (!endpoint) throw new Error('Missing contact configuration');
       const response = await fetch(endpoint, {
         method: 'POST',
-        headers: {'Content-Type': 'application/json', 'Accept': 'application/json'},
-        body: JSON.stringify(Object.fromEntries(new FormData(form))),
+        headers: {'Content-Type': 'application/json', 'Accept': 'application/json', 'Idempotency-Key': submissionKey},
+        body,
         signal: controller.signal
       });
       const result = await response.json().catch(() => null);
@@ -149,8 +156,10 @@ document.querySelectorAll('.contact-form').forEach(form => {
         if (names.length) names[0].focus();
         return;
       }
-      if (response.status !== 201 || !result) throw new Error('Unexpected response');
+      if (response.status !== 201 || !Number.isSafeInteger(result?.id) || result.id < 1) throw new Error('Unexpected response');
       form.reset();
+      submissionKey = null;
+      submittedBody = null;
       notify('Thank you. Your enquiry has been sent. We’ll be in touch to discuss your project.', 'success');
       status.focus();
     } catch {

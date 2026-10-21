@@ -65,6 +65,20 @@ class ContactControllerIntegrationTest {
     }
 
     @Test
+    void validatesTrimmedMessageAndAllowsIdempotencyCorsHeader() throws Exception {
+        mockMvc.perform(post("/api/contact").contentType(MediaType.APPLICATION_JSON).content("""
+                {"name":"Taylor", "email":"taylor@example.com", "service":"Website Development",
+                 "message":"x          "}
+                """))
+                .andExpect(status().isBadRequest()).andExpect(jsonPath("$.fieldErrors.message").exists());
+        mockMvc.perform(options("/api/contact").header("Origin", "http://localhost:8000")
+                .header("Access-Control-Request-Method", "POST")
+                .header("Access-Control-Request-Headers", "content-type,idempotency-key"))
+                .andExpect(status().isOk())
+                .andExpect(header().string("Access-Control-Allow-Headers", org.hamcrest.Matchers.containsString("idempotency-key")));
+    }
+
+    @Test
     void allowsFrontendCorsOrigin() throws Exception {
         mockMvc.perform(options("/api/contact")
                         .header("Origin", "http://localhost:8000")
