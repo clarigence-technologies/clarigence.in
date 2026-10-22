@@ -174,7 +174,6 @@ function addDetailField(container, label, value, options = {}) {
 async function openEnquiry(id) {
   setMessage(detailMessage, 'Loading enquiry…');
   activeEnquiryId = id;
-  document.querySelector('#retry-notification').disabled = true;
   document.querySelector('#detail-content').replaceChildren();
   detailDialog.showModal();
   try {
@@ -190,10 +189,6 @@ async function openEnquiry(id) {
     addDetailField(grid, 'SERVICE REQUIRED', item.service);
     addDetailField(grid, 'RECEIVED', formatDate(item.createdAt));
     addDetailField(grid, 'MESSAGE', item.message, { full: true });
-    addDetailField(grid, 'EMAIL NOTIFICATION', readableStatus(item.notificationStatus));
-    addDetailField(grid, 'LAST EMAIL ATTEMPT', formatDate(item.notificationAttemptedAt));
-    if (item.notificationError) addDetailField(grid, 'EMAIL DELIVERY NOTE', item.notificationError, { full: true });
-    document.querySelector('#retry-notification').disabled = item.notificationStatus === 'SENT';
     content.append(grid);
     document.querySelector('#detail-status').value = item.status;
     setMessage(detailMessage, '');
@@ -318,21 +313,5 @@ document.querySelector('#delete-enquiry').addEventListener('click', async (event
   }
 });
 
-document.querySelector('#retry-notification').addEventListener('click', async event => {
-  if (!activeEnquiryId) return;
-  const button = event.currentTarget;
-  button.disabled = true;
-  try {
-    const item = await apiRequest(`/api/admin/enquiries/${activeEnquiryId}/notification/retry`, { method: 'POST' });
-    detailDialog.close();
-    await openEnquiry(item.id);
-    setMessage(detailMessage, item.notificationStatus === 'SENT' ? 'Email accepted by the provider.' :
-      'Email was not sent. Your enquiry remains saved. Check the delivery note and backend configuration.',
-      item.notificationStatus === 'SENT' ? 'success' : 'error');
-  } catch (error) {
-    setMessage(detailMessage, error.message, 'error');
-    button.disabled = false;
-  }
-});
 
 initialize();

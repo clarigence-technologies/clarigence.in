@@ -1,0 +1,335 @@
+{
+  "services": [
+    {
+      "name": "Website Development",
+      "slug": "website-development",
+      "shortDescription": "A professional online home that makes your business easy to understand and easy to contact.",
+      "description": "Responsive business websites, clear navigation and purposeful content help customers take the next step.",
+      "icon": "window",
+      "imageUrl": "",
+      "displayOrder": 10,
+      "active": true,
+      "capabilities": [
+        "Responsive design",
+        "On-page SEO",
+        "Performance optimization",
+        "Enquiry integration"
+      ],
+      "benefits": [
+        "A professional online home that makes your business easy to understand and easy to contact."
+      ],
+      "useCases": "Business websites, service companies and new ventures."
+    },
+    {
+      "name": "Salesforce Development",
+      "slug": "salesforce-development",
+      "shortDescription": "Connect your customer information, sales processes and everyday work with a CRM built around your team.",
+      "description": "We help plan, implement and customize Salesforce to support your business processes and customer relationships.",
+      "icon": "cloud",
+      "imageUrl": "",
+      "displayOrder": 20,
+      "active": true,
+      "capabilities": [
+        "CRM implementation",
+        "Custom development",
+        "Workflow automation",
+        "System integration"
+      ],
+      "benefits": [
+        "Connect your customer information, sales processes and everyday work with a CRM built around your team."
+      ],
+      "useCases": "Sales pipelines, customer service and connected business operations."
+    },
+    {
+      "name": "App Development",
+      "slug": "app-development",
+      "shortDescription": "Turn a business requirement into a useful mobile experience that your customers and team can rely on.",
+      "description": "We design and develop mobile applications around real user needs, with a considered approach to usability and scalability.",
+      "icon": "phone",
+      "imageUrl": "",
+      "displayOrder": 30,
+      "active": true,
+      "capabilities": [
+        "User experience design",
+        "Mobile development",
+        "API integration",
+        "Testing and release support"
+      ],
+      "benefits": [
+        "Turn a business requirement into a useful mobile experience that your customers and team can rely on."
+      ],
+      "useCases": "Customer-facing apps, booking experiences and internal tools."
+    },
+    {
+      "name": "Digital Marketing",
+      "slug": "digital-marketing",
+      "shortDescription": "Build a more visible digital presence with a focused strategy, relevant content and measurable activity.",
+      "description": "We help identify your audience, choose appropriate channels and plan campaigns that support your business goals.",
+      "icon": "trend",
+      "imageUrl": "",
+      "displayOrder": 40,
+      "active": true,
+      "capabilities": [
+        "Campaign planning",
+        "Content strategy",
+        "Search visibility",
+        "Reporting and improvement"
+      ],
+      "benefits": [
+        "Build a more visible digital presence with a focused strategy, relevant content and measurable activity."
+      ],
+      "useCases": "Brand awareness, service discovery and lead-generation campaigns."
+    },
+    {
+      "name": "Landing Pages",
+      "slug": "landing-pages",
+      "shortDescription": "Give every campaign a focused destination with a clear message and a simple next step.",
+      "description": "We build dedicated pages that connect your offer, audience and enquiry journey without unnecessary distractions.",
+      "icon": "layout",
+      "imageUrl": "",
+      "displayOrder": 50,
+      "active": true,
+      "capabilities": [
+        "Campaign-specific design",
+        "Clear calls to action",
+        "Lead form integration",
+        "Analytics setup"
+      ],
+      "benefits": [
+        "Give every campaign a focused destination with a clear message and a simple next step."
+      ],
+      "useCases": "Advertising campaigns, product launches and service promotions."
+    },
+    {
+      "name": "Google Business Profile",
+      "slug": "google-business-profile",
+      "shortDescription": "Help nearby customers discover your business and find accurate information when they need it.",
+      "description": "We assist with profile setup and optimization, keeping business details, service information and visual content consistent.",
+      "icon": "pin",
+      "imageUrl": "",
+      "displayOrder": 60,
+      "active": true,
+      "capabilities": [
+        "Profile setup assistance",
+        "Business information",
+        "Service and photo updates",
+        "Local visibility review"
+      ],
+      "benefits": [
+        "Help nearby customers discover your business and find accurate information when they need it."
+      ],
+      "useCases": "Local shops, professional services and businesses serving a defined area."
+    },
+    {
+      "name": "Business Email",
+      "slug": "business-email",
+      "shortDescription": "Make every conversation feel professional with email on your own company domain.",
+      "description": "We help configure domain-based business email and guide your team through account and device setup.",
+      "icon": "mail",
+      "imageUrl": "",
+      "displayOrder": 70,
+      "active": true,
+      "capabilities": [
+        "Domain configuration",
+        "Mailbox setup",
+        "Email authentication",
+        "Migration assistance"
+      ],
+      "benefits": [
+        "Make every conversation feel professional with email on your own company domain."
+      ],
+      "useCases": "New businesses, growing teams and brands moving beyond personal email."
+    },
+    {
+      "name": "Website Maintenance",
+      "slug": "website-maintenance",
+      "shortDescription": "Keep your website current, dependable and ready for the next stage of your business.",
+      "description": "We provide ongoing technical support and agreed maintenance tasks so your website continues to serve your customers.",
+      "icon": "shield",
+      "imageUrl": "",
+      "displayOrder": 80,
+      "active": true,
+      "capabilities": [
+        "Content updates",
+        "Performance checks",
+        "Security improvements",
+        "Technical troubleshooting"
+      ],
+      "benefits": [
+        "Keep your website current, dependable and ready for the next stage of your business."
+      ],
+      "useCases": "Existing business websites, regular content changes and ongoing support."
+    },
+    {
+      "name": "Lead Capture Forms",
+      "slug": "lead-capture-forms",
+      "shortDescription": "Make it easier for potential customers to reach you and for your team to manage enquiries.",
+      "description": "We create accessible forms and connect them to the agreed enquiry destination, with useful validation and clear feedback.",
+      "icon": "form",
+      "imageUrl": "",
+      "displayOrder": 90,
+      "active": true,
+      "capabilities": [
+        "Custom enquiry forms",
+        "Field validation",
+        "CRM or API integration",
+        "Submission notifications"
+      ],
+      "benefits": [
+        "Make it easier for potential customers to reach you and for your team to manage enquiries."
+      ],
+      "useCases": "Website enquiries, campaign leads and consultation requests."
+    },
+    {
+      "name": "Business Automation",
+      "slug": "business-automation",
+      "shortDescription": "Reduce repetitive tasks and keep information moving between your people, tools and processes.",
+      "description": "We map your existing workflows and build practical automations around the tasks that take time away from your core work.",
+      "icon": "flow",
+      "imageUrl": "",
+      "displayOrder": 100,
+      "active": true,
+      "capabilities": [
+        "Workflow discovery",
+        "Lead routing",
+        "Notifications",
+        "Connected systems"
+      ],
+      "benefits": [
+        "Reduce repetitive tasks and keep information moving between your people, tools and processes."
+      ],
+      "useCases": "Enquiry follow-up, customer onboarding and recurring operational tasks."
+    }
+  ],
+  "documents": {
+    "home": {
+      "headline": "Grow Your\nBusiness With\nTechnology.",
+      "subtitle": "From your first website to smarter business systems, Clarigence helps you build, improve and grow your digital presence.",
+      "primaryCtaText": "Let’s discuss your project",
+      "primaryCtaUrl": "contact.html",
+      "secondaryCtaText": "Explore services",
+      "secondaryCtaUrl": "services.html",
+      "aboutHeading": "Technology with\na business purpose.",
+      "aboutText": "We help startups and growing businesses turn their requirements into useful websites, apps and connected systems. Our approach brings clear thinking, thoughtful design and practical development together.",
+      "ctaHeading": "Your ambition.\nOur technology.",
+      "ctaDescription": "Start with a conversation. We’ll help you find the right way forward."
+    },
+    "about": {
+      "heading": "Clear thinking.\nUseful technology.",
+      "intro": "We help businesses establish, improve and grow their digital presence with solutions that serve a real purpose.",
+      "companyDescription": "Clarigence.in is an IT services and digital solutions company. We bring websites, mobile applications, Salesforce, digital marketing and business automation together around your requirements.",
+      "mission": "",
+      "vision": "",
+      "valuesIntro": "Practical solutions for startups and SMEs, with the attention your business deserves."
+    },
+    "business": {
+      "name": "Clarigence.in",
+      "tagline": "Grow Your Business With Technology.",
+      "email": "hello@clarigence.in",
+      "phone": "",
+      "showPhone": "false",
+      "whatsapp": "918459179752",
+      "address": "India",
+      "instagram": "https://www.instagram.com/clarigence.in/",
+      "linkedin": "https://www.linkedin.com/company/clarigence-in/",
+      "facebook": "",
+      "hours": ""
+    },
+    "seo-home": {
+      "title": "Clarigence.in | Grow Your Business With Technology.",
+      "description": "Business websites, Salesforce, apps, digital marketing and automation. Clarigence.in helps startups and SMEs build and improve their digital presence.",
+      "ogTitle": "Clarigence.in | Grow Your Business With Technology.",
+      "ogDescription": "Business websites, Salesforce, apps, digital marketing and automation. Clarigence.in helps startups and SMEs build and improve their digital presence.",
+      "ogImage": "assets/images/clarigence-logo.png"
+    },
+    "seo-about": {
+      "title": "About Clarigence.in | Your Technology Partner",
+      "description": "Meet Clarigence.in: business-focused IT services and digital solutions for startups and growing businesses.",
+      "ogTitle": "About Clarigence.in | Your Technology Partner",
+      "ogDescription": "Meet Clarigence.in: business-focused IT services and digital solutions for startups and growing businesses.",
+      "ogImage": "assets/images/clarigence-logo.png"
+    },
+    "seo-services": {
+      "title": "IT & Digital Services | Clarigence.in",
+      "description": "Explore ten Clarigence services: website and app development, Salesforce, marketing, landing pages, local visibility, business email, maintenance, forms and automation.",
+      "ogTitle": "IT & Digital Services | Clarigence.in",
+      "ogDescription": "Explore ten Clarigence services: website and app development, Salesforce, marketing, landing pages, local visibility, business email, maintenance, forms and automation.",
+      "ogImage": "assets/images/clarigence-logo.png"
+    },
+    "seo-solutions": {
+      "title": "Business Solutions for Startups & SMEs | Clarigence.in",
+      "description": "Find connected digital solutions for your business presence, customer enquiries, Salesforce workflows and ongoing website support.",
+      "ogTitle": "Business Solutions for Startups & SMEs | Clarigence.in",
+      "ogDescription": "Find connected digital solutions for your business presence, customer enquiries, Salesforce workflows and ongoing website support.",
+      "ogImage": "assets/images/clarigence-logo.png"
+    },
+    "seo-portfolio": {
+      "title": "Design Concepts & Digital Explorations | Clarigence.in",
+      "description": "Explore Clarigence website, storefront, CRM and cloud design concepts. Illustrative explorations, transparently labeled without invented client claims.",
+      "ogTitle": "Design Concepts & Digital Explorations | Clarigence.in",
+      "ogDescription": "Explore Clarigence website, storefront, CRM and cloud design concepts. Illustrative explorations, transparently labeled without invented client claims.",
+      "ogImage": "assets/images/clarigence-logo.png"
+    },
+    "seo-contact": {
+      "title": "Discuss Your Project | Contact Clarigence.in",
+      "description": "Contact Clarigence.in about website development, Salesforce, apps, digital marketing and automation. Tell us about your business and project requirements.",
+      "ogTitle": "Discuss Your Project | Contact Clarigence.in",
+      "ogDescription": "Contact Clarigence.in about website development, Salesforce, apps, digital marketing and automation. Tell us about your business and project requirements.",
+      "ogImage": "assets/images/clarigence-logo.png"
+    }
+  },
+  "portfolio": [
+    {
+      "title": "Digital presence, reimagined.",
+      "category": "Website concept",
+      "shortDescription": "A service website exploration with clear navigation and a focused enquiry journey.",
+      "description": "This illustrative design explores usability and visual direction. It is not a shipped client project or a live product.",
+      "technologies": [
+        "HTML · CSS · JavaScript"
+      ],
+      "concept": true,
+      "featured": true,
+      "imageUrl": "",
+      "projectUrl": ""
+    },
+    {
+      "title": "Shopping, made simpler.",
+      "category": "Commerce concept",
+      "shortDescription": "A storefront exploration organized around product discovery and a simple customer journey.",
+      "description": "This illustrative design explores usability and visual direction. It is not a shipped client project or a live product.",
+      "technologies": [
+        "UI design · Responsive layout"
+      ],
+      "concept": true,
+      "featured": true,
+      "imageUrl": "",
+      "projectUrl": ""
+    },
+    {
+      "title": "Workflows in sync.",
+      "category": "CRM concept",
+      "shortDescription": "An interface exploration connecting customer context, pipeline stages and follow-up tasks.",
+      "description": "This illustrative design explores usability and visual direction. It is not a shipped client project or a live product.",
+      "technologies": [
+        "CRM design · Workflow planning"
+      ],
+      "concept": true,
+      "featured": false,
+      "imageUrl": "",
+      "projectUrl": ""
+    },
+    {
+      "title": "Ready for what’s next.",
+      "category": "Cloud concept",
+      "shortDescription": "A visual exploration of a connected foundation for digital business tools.",
+      "description": "This illustrative design explores usability and visual direction. It is not a shipped client project or a live product.",
+      "technologies": [
+        "Architecture concept · Integration planning"
+      ],
+      "concept": true,
+      "featured": false,
+      "imageUrl": "",
+      "projectUrl": ""
+    }
+  ]
+}

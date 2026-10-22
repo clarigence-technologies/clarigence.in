@@ -3,15 +3,29 @@
   const requests = new Map();
   // CMS hydration shares the initial headline timeline rather than replaying it.
   const headlineStart = document.querySelector('.title-letter')?.getAnimations()[0]?.startTime ?? performance.now();
-  const api = path => {
-    if (!requests.has(path)) requests.set(path, (async () => {
-      const response = await fetch(`${window.CLARIGENCE_CONFIG.apiBaseUrl}${path}`, {
-        headers:{Accept:'application/json'}, credentials:'omit', cache:'no-store', signal:AbortSignal.timeout(12000)
+  const api = async path => {
+    if (!requests.has('content')) requests.set('content', (async () => {
+      const response = await fetch(window.CLARIGENCE_CONFIG.contentUrl, {
+        headers: {Accept: 'application/json'}, credentials: 'omit', signal: AbortSignal.timeout(12000)
       });
       if (!response.ok) throw new Error('Content unavailable');
       return response.json();
     })());
-    return requests.get(path);
+    const content = await requests.get('content');
+    const services = content.services.filter(item => item.active).sort((a, b) => a.displayOrder - b.displayOrder);
+    if (path === '/api/services') return services;
+    if (path.startsWith('/api/services/')) {
+      const service = services.find(item => item.slug === decodeURIComponent(path.slice('/api/services/'.length)));
+      if (!service) throw new Error('Service unavailable');
+      return service;
+    }
+    if (path === '/api/portfolio') return content.portfolio;
+    if (path.startsWith('/api/content/')) {
+      const document = content.documents[path.slice('/api/content/'.length)];
+      if (!document) throw new Error('Content unavailable');
+      return document;
+    }
+    throw new Error('Unknown content');
   };
   const node = (tag, classes, text) => {
     const element=document.createElement(tag);

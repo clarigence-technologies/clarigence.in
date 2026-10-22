@@ -1,5 +1,5 @@
-// Production builds replace this single endpoint using CLARIGENCE_API_URL.
+// Static content and email delivery: no application database or Java backend.
 window.CLARIGENCE_CONFIG = Object.freeze({
-  apiBaseUrl: 'http://localhost:8081',
-  get contactApiUrl() { return `${this.apiBaseUrl}/api/contact`; }
+  contentUrl: '/content.json',
+  contactApiUrl: 'https://formsubmit.co/ajax/hello@clarigence.in'
 });

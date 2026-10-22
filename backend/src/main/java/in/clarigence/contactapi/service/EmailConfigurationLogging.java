@@ -23,7 +23,7 @@ public class EmailConfigurationLogging {
     public void logConfiguration() {
         boolean enabled = environment.getProperty("clarigence.enquiry-email.enabled", Boolean.class, false);
         if (!enabled) {
-            log.warn("Enquiry email notifications disabled. Set ENQUIRY_EMAIL_ENABLED=true and configure an email provider on the backend host.");
+            log.info("Enquiry email notifications disabled; enquiries remain available in the admin dashboard.");
             return;
         }
         if ("resend".equals(environment.getProperty("clarigence.enquiry-email.provider", "smtp"))) {
@@ -51,7 +51,7 @@ public class EmailConfigurationLogging {
     public void logSaved(EnquiryCreated event) {
         log.info("Enquiry {} saved successfully (database transaction committed).", event.contact().getId());
         if (!environment.getProperty("clarigence.enquiry-email.enabled", Boolean.class, false)) {
-            log.warn("Email skipped for saved enquiry {}: notifications disabled.", event.contact().getId());
+            log.info("Enquiry {} available in the admin dashboard; email notifications disabled.", event.contact().getId());
         }
     }
 

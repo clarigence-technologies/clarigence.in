@@ -13,38 +13,12 @@ const publicFiles = [
   'styles.css',
   'script.js',
   'cms.js',
+  'content.json',
   'api-config.js',
   'sitemap.xml',
   'robots.txt',
   'favicon.ico',
 ];
-
-const localApiUrl = 'http://localhost:8081/api/contact';
-const configuredBase = process.env.CLARIGENCE_API_BASE_URL?.trim();
-const configuredApiUrl = configuredBase ? `${configuredBase.replace(/\/$/, '')}/api/contact` : process.env.CLARIGENCE_API_URL?.trim();
-let apiUrl = localApiUrl;
-
-// Validate deployment configuration before replacing the existing output.
-if (configuredApiUrl) {
-  let parsedUrl;
-  try {
-    parsedUrl = new URL(configuredApiUrl);
-  } catch {
-    throw new Error('CLARIGENCE_API_URL must be an absolute HTTPS URL.');
-  }
-  if (parsedUrl.protocol !== 'https:' || /^(localhost|127\.0\.0\.1|\[::1\])$/i.test(parsedUrl.hostname)) {
-    throw new Error('CLARIGENCE_API_URL must use HTTPS and point to your deployed backend, not localhost.');
-  }
-  if (parsedUrl.username || parsedUrl.password || parsedUrl.search || parsedUrl.hash) {
-    throw new Error('CLARIGENCE_API_URL must not contain credentials, a query string, or a fragment.');
-  }
-  if (!parsedUrl.pathname.replace(/\/$/, '').endsWith('/api/contact')) {
-    throw new Error('CLARIGENCE_API_URL must end in /api/contact.');
-  }
-  apiUrl = parsedUrl.toString().replace(/\/$/, '');
-} else if (process.env.VERCEL === '1' || process.env.VERCEL_ENV) {
-  throw new Error('Set CLARIGENCE_API_URL to your deployed HTTPS backend endpoint ending in /api/contact, then redeploy. A live contact form cannot use localhost.');
-}
 
 fs.rmSync(output, { recursive: true, force: true });
 fs.mkdirSync(output, { recursive: true });
@@ -63,14 +37,4 @@ if (!fs.existsSync(assetsSource)) {
 }
 fs.cpSync(assetsSource, path.join(output, 'assets'), { recursive: true });
 
-const configPath = path.join(output, 'api-config.js');
-const configSource = fs.readFileSync(configPath, 'utf8');
-const localBase = localApiUrl.replace(/\/api\/contact$/, '');
-if (!configSource.includes(localBase)) {
-  throw new Error('Could not find the expected local contact endpoint in api-config.js.');
-}
-fs.writeFileSync(configPath, configSource.replace(localBase, apiUrl.replace(/\/api\/contact$/, '')));
-
-if (!configuredApiUrl) console.log('Local build: contact form uses the backend on port 8081.');
-
-console.log(`Prepared static Vercel output in ${path.relative(root, output)}.`);
+console.log(`Prepared static Vercel output in ${path.relative(root, output)}; email enquiries use FormSubmit.`);

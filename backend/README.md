@@ -1,5 +1,12 @@
 # Clarigence Contact API and Admin Dashboard
 
+Current deployment (22 October 2026): use Vercel with a persistent hosted MySQL
+database and admin-only enquiries. Email is disabled in the Vercel profile;
+SMTP and Resend setup below is optional historical reference and is not required.
+Follow [the current Vercel guide](../VERCEL-DEPLOYMENT.md). Railway is no longer
+part of the deployment. The backend has not yet been deployed because hosted
+database credentials are still missing from its Vercel project.
+
 Java 21 / Spring Boot service for the public contact form and a separate admin workspace. The backend serves the admin UI at `/admin/`; the public static website remains in the repository root.
 
 ## Requirements

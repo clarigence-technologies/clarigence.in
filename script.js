@@ -104,8 +104,6 @@ document.querySelectorAll('.contact-form').forEach(form => {
       option.textContent.toLowerCase().replaceAll(' ', '-') === requested);
     if (match) form.elements.service.value = match.value;
   }
-  let submissionKey = null;
-  let submittedBody = null;
   form.noValidate = true;
   form.addEventListener('submit', async event => {
     event.preventDefault();
@@ -125,11 +123,12 @@ document.querySelectorAll('.contact-form').forEach(form => {
       invalid.focus();
       return;
     }
-    const body = JSON.stringify(Object.fromEntries(new FormData(form)));
-    if (body !== submittedBody || !submissionKey) {
-      submissionKey = crypto.randomUUID();
-      submittedBody = body;
-    }
+    const values = Object.fromEntries(new FormData(form));
+    const body = JSON.stringify({...values,
+      _subject: 'New Clarigence website enquiry',
+      _template: 'table',
+      _url: location.href
+    });
     const original = button.innerHTML;
     button.disabled = true;
     button.textContent = 'Sending enquiry…';
@@ -142,7 +141,7 @@ document.querySelectorAll('.contact-form').forEach(form => {
       if (!endpoint) throw new Error('Missing contact configuration');
       const response = await fetch(endpoint, {
         method: 'POST',
-        headers: {'Content-Type': 'application/json', 'Accept': 'application/json', 'Idempotency-Key': submissionKey},
+        headers: {'Content-Type': 'application/json', 'Accept': 'application/json'},
         body,
         signal: controller.signal
       });
@@ -156,11 +155,9 @@ document.querySelectorAll('.contact-form').forEach(form => {
         if (names.length) names[0].focus();
         return;
       }
-      if (response.status !== 201 || !Number.isSafeInteger(result?.id) || result.id < 1) throw new Error('Unexpected response');
+      if (result?.success !== true && result?.success !== 'true') throw new Error('Email service did not accept the enquiry');
       form.reset();
-      submissionKey = null;
-      submittedBody = null;
-      notify('Thank you. Your enquiry has been sent. We’ll be in touch to discuss your project.', 'success');
+      notify('Thank you. Your enquiry has been accepted for email delivery. We’ll be in touch to discuss your project.', 'success');
       status.focus();
     } catch {
       notify('We couldn’t confirm your enquiry. Please try again later or email hello@clarigence.in.', 'error');
