@@ -125,6 +125,8 @@ h3{font-weight:650;line-height:1.25}
 .form-intro{font-size:13px;line-height:1.7}
 .field label{font-size:13px}
 .form-note{font-size:12px;line-height:1.7}
+.form-email-fallback .button{width:100%;text-align:center}
+.form-email-fallback span{display:block;margin-top:8px;font-size:12px;line-height:1.7;color:var(--muted)}
 .site-footer{background:#f2f5fa}
 .footer-column h3{font-size:15px;font-weight:700;margin-bottom:12px}
 .footer-brand p,.footer-column>a,.footer-column p{font-size:14px;line-height:1.75}

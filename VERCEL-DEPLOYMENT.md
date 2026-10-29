@@ -19,6 +19,15 @@ spam, and click FormSubmit's activation link. Until activation, inbox delivery
 is not verified. Then submit a real enquiry and confirm its email arrives.
 An HTTP acceptance response does not prove inbox delivery.
 
+If enquiries fail, check the FormSubmit endpoint before changing the website's
+validation. HTTP 521 means the delivery service is unavailable; changing the
+form fields or reactivating the mailbox will not repair a provider outage.
+Both forms preserve entered details and offer **Send by email instead** when
+delivery fails or cannot be confirmed. This opens a prefilled draft in the
+visitor's email app; the visitor must send it. It does not automatically resend
+an enquiry or claim successful delivery. Automatic form delivery still depends
+on FormSubmit recovering, or replacing it with a configured email provider.
+
 FormSubmit documentation: https://formsubmit.co/documentation
 Activation help: https://formsubmit.co/help
 FormSubmit is an external processor and may retain submissions according to its
@@ -36,7 +45,7 @@ The old Java backend is retained as source but excluded from the public upload.
 ## Verification
 
 Run `node scripts/build-static.js`, then
-`python scripts/serve-static.py --port 8012`.
+`node scripts/serve-static.js` (http://localhost:8000).
 With the existing development Playwright tooling installed, run
 `node scripts/verify-email-forms.cjs`. It intercepts all email requests locally
 and checks both forms without sending messages.
