@@ -76,6 +76,9 @@
   };
   const reveal=container=>window.ClarigenceMotion?.observe(container);
   const detailHref=slug=>`/services?service=${encodeURIComponent(slug)}`;
+  const designGraphic=(name,alt,classes)=>{
+    const asset=node('img',classes);asset.src=`assets/graphics/${name}.svg`;asset.alt=alt;asset.width=640;asset.height=420;asset.loading='lazy';asset.decoding='async';return asset;
+  };
   async function services(){
     const containers=[...document.querySelectorAll('[data-services]')];
     const select=document.querySelector('[name=service]');
@@ -102,6 +105,7 @@
           const card=link('',detailHref(service.slug),'service-card');
           const top=node('div','card-top');top.append(icon(service.icon),node('span','card-number',String(index+1).padStart(2,'0')));
           card.append(top,node('h3','',service.name),node('p','',service.shortDescription));
+          if(service.capabilities?.length){const list=node('ul','service-features');service.capabilities.slice(0,3).forEach(capability=>list.append(node('li','',capability)));card.append(list);}
           const action=node('span','card-link','Explore service ');const arrow=node('span','','↗');arrow.setAttribute('aria-hidden','true');action.append(arrow);card.append(action);container.append(card);
         });reveal(container);
       });
@@ -148,6 +152,7 @@
     const article=node('article','service-detail');const intro=node('div');intro.append(icon(s.icon),node('h2','',s.name),node('p','cms-copy',s.description));
     if(s.useCases){intro.append(node('h3','cms-subheading','Typical use cases'),node('p','',s.useCases));}
     if(s.imageUrl)intro.append(image(s.imageUrl,`${s.name} illustration`,'service-image'));
+    else intro.append(designGraphic(s.icon==='cloud'?'crm-concept':s.icon==='window'||s.icon==='layout'?'website-concept':'business-growth',`Illustrative ${s.name} graphic`,'service-image'));
     const content=node('div');
     [['How we can help',s.capabilities],['Business benefits',s.benefits]].forEach(([heading,list])=>{
       if(list?.length){content.append(node('h3','',heading));const ul=node('ul','capabilities');list.forEach(value=>ul.append(node('li','',value)));content.append(ul);}
@@ -166,6 +171,10 @@
         selected.forEach(project=>{
           const article=node('article','work-card');const art=node('div','project-art');
           if(project.imageUrl)art.append(image(project.imageUrl,project.title,'project-image'));
+          else if(project.concept){
+            const category=(project.category||'').toLowerCase();const kind=category.includes('commerce')?'commerce':category.includes('crm')?'crm':category.includes('cloud')?'cloud':'website';
+            art.append(designGraphic(`${kind}-concept`,`Illustrative ${project.category||'digital'} concept preview`,'concept-preview'));
+          }
           else{const visual=node('div','mock-window');visual.setAttribute('aria-hidden','true');const inside=node('div','mock-body');inside.append(node('span','mock-label',project.category||'PROJECT'),node('strong','',project.title));visual.append(inside);art.append(visual);}
           if(project.concept)art.append(node('span','concept-badge','DEMO / CONCEPT'));
           const copy=node('div','project-copy');copy.append(node('p','eyebrow',project.category||'Project'),node('h3','',project.title),node('p','',project.shortDescription));
@@ -182,7 +191,7 @@
   const text=(selector,value)=>{if(value!=null)document.querySelectorAll(selector).forEach(n=>{n.textContent=value;});};
   const multiline=(element,value)=>{
     if(!element || value==null)return;element.replaceChildren();
-    value.split('\n').forEach((line,index)=>{if(index)element.append(document.createElement('br'));element.append(document.createTextNode(line));});
+    const lines=value.split('\n');lines.forEach((line,index)=>{if(index)element.append(document.createElement('br'));element.append(index===lines.length-1&&index>0?node('span','heading-accent',line):document.createTextNode(line));});
   };
   function heroTitle(value){
     const heading=document.querySelector('.hero-title');if(!heading)return;

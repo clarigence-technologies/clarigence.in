@@ -1,5 +1,15 @@
 # Clarigence public-site upgrade
 
+## Current graphic refresh
+
+Follow-up correction: removed the legacy last-card centering rule that conflicted with the 12-column service grid and squeezed Business Automation into a narrow vertical column. Regression checks now verify minimum service-card widths and final-row alignment. The palette now uses medium-strength blue, violet and teal accents: richer buttons and headings, a more colorful globe, clearer icon fills, and more defined capability, process and final CTA backgrounds.
+
+The current version retains the original six-page layout and content, with a graphic treatment informed by the user-supplied Avimaytech reference. `visuals.css` adds a glossy blue/cyan/violet hero globe with floating capability badges, gradient heading accents, pill-shaped CTAs, a gradient capability strip, soft service cards with existing capability lists, original concept thumbnails, styled process cards and a navy footer with readable text.
+
+Five original SVG illustrations total roughly 16 KB. The existing logo is served in an optimized 400 × 87 derivative. No competitor artwork, client claims, reviews or business statistics were incorporated. Uploaded portfolio images and existing concept flags remain authoritative. No production dependencies were added.
+
+The build runs `scripts/enhance-visuals.js` before copying public files. This enhancement is idempotent, survives the optional page generator, and versions style/script URLs by content hash so browsers request the current visual assets after a rebuild. Enquiry forms, clean URLs, business content and admin source remain compatible with the existing architecture.
+
 ## Audit and preservation
 
 The project contains six public HTML pages, a shared stylesheet and script, existing logo/favicon assets, and a Vercel static-copy build. The separate Spring Boot application owns contact persistence, MySQL, admin authentication and its own HTML/CSS/JavaScript. Public-site changes do not touch those backend or admin source files.

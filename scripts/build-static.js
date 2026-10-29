@@ -2,6 +2,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 
 const root = path.resolve(__dirname, '..');
+require('./enhance-visuals.js');
 const output = path.join(root, 'dist');
 const publicFiles = [
   'index.html',
@@ -11,6 +12,7 @@ const publicFiles = [
   'portfolio.html',
   'contact.html',
   'styles.css',
+  'visuals.css',
   'script.js',
   'cms.js',
   'content.json',

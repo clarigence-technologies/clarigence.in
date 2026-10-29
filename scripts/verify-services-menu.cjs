@@ -15,7 +15,7 @@ const fixtures=JSON.parse(fs.readFileSync(path.join(root,'backend/src/main/resou
     if(url.pathname==='/api/services')return route.fulfill({json:fixtures});
     return route.fulfill({status:404,json:{}});
    }
-   if(url.pathname==='/api-config.js')return route.fulfill({contentType:'application/javascript',body:'window.CLARIGENCE_CONFIG={apiBaseUrl:"https://menu.test",contactApiUrl:"https://menu.test/api/contact"};'});
+   if(url.pathname==='/api-config.js')return route.fulfill({contentType:'application/javascript',body:'window.CLARIGENCE_CONFIG={contentUrl:"https://menu.test/content.json",apiBaseUrl:"https://menu.test",contactApiUrl:"https://menu.test/api/contact"};'});
    let file=url.pathname==='/'?'index.html':url.pathname.slice(1);
    if(!path.extname(file))file+='.html';
    const target=path.join(root,file);
