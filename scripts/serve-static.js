@@ -2,12 +2,25 @@
 const http=require('node:http');
 const fs=require('node:fs');
 const path=require('node:path');
+const contactHandler=require('../api/contact');
 const root=path.resolve(__dirname,'../dist');
 const port=Number(process.env.PORT||8000);
 const pages=new Set(['about','services','solutions','portfolio','contact']);
 const types={'.html':'text/html; charset=utf-8','.css':'text/css; charset=utf-8','.js':'application/javascript; charset=utf-8','.json':'application/json','.svg':'image/svg+xml','.webp':'image/webp','.png':'image/png','.ico':'image/x-icon','.woff2':'font/woff2','.txt':'text/plain','.xml':'application/xml'};
-http.createServer((request,response)=>{
+http.createServer(async(request,response)=>{
   const url=new URL(request.url,'http://localhost');
+  if(url.pathname==='/api/contact'){
+    response.status=code=>{response.statusCode=code;return response;};
+    response.json=body=>{response.setHeader('Content-Type','application/json');response.end(JSON.stringify(body));};
+    let body='';
+    for await(const chunk of request){
+      body+=chunk;
+      if(Buffer.byteLength(body)>32768){response.status(413).json({success:false});return;}
+    }
+    request.body=body;
+    await contactHandler(request,response);
+    return;
+  }
   let pathname;try{pathname=decodeURIComponent(url.pathname);}catch{response.writeHead(400).end();return;}
   const clean=pathname==='/'?'/':pathname.replace(/\.html$|\/$/g,'');
   if(['/index','/home'].includes(clean)||pathname==='/index.html'){

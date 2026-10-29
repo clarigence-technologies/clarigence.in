@@ -5,6 +5,7 @@
 .vercel/
 dist/
 .qa-tools/
+node_modules/
 artifacts/qa/
 __pycache__/
 
@@ -20,3 +21,4 @@ Thumbs.db
 
 .vercel
 .env*
+!.env.example

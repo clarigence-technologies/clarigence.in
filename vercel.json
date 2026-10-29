@@ -5,6 +5,11 @@
   "outputDirectory": "dist",
   "cleanUrls": true,
   "trailingSlash": false,
+  "functions": {
+    "api/contact.js": {
+      "maxDuration": 30
+    }
+  },
   "redirects": [
     {
       "source": "/index",

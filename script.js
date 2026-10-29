@@ -71,28 +71,6 @@ if (menuButton && nav) {
 document.querySelectorAll('.contact-form').forEach(form => {
   const status = form.querySelector('#form-status');
   const fields = [...form.querySelectorAll('[name]')];
-  const emailFallback = document.createElement('p');
-  emailFallback.className = 'form-email-fallback';
-  emailFallback.hidden = true;
-  const emailLink = document.createElement('a');
-  emailLink.className = 'button button-secondary';
-  emailLink.textContent = 'Send by email instead';
-  const emailHelp = document.createElement('span');
-  emailHelp.textContent = 'Opens your email app with your details. Send the email there to complete your enquiry.';
-  emailFallback.append(emailLink, emailHelp);
-  status.after(emailFallback);
-  const updateEmailLink = () => {
-    const values = Object.fromEntries(new FormData(form));
-    const body = [
-      `Name: ${values.name || ''}`,
-      `Email: ${values.email || ''}`,
-      `Phone: ${values.phone || ''}`,
-      `Company: ${values.company || ''}`,
-      `Service: ${values.service || ''}`,
-      '', values.message || '', '', `Page: ${location.href}`
-    ].join('\r\n');
-    emailLink.href = `mailto:hello@clarigence.in?subject=${encodeURIComponent('Clarigence website enquiry')}&body=${encodeURIComponent(body)}`;
-  };
   const messages = {
     name: 'Enter your name (up to 120 characters).',
     email: 'Enter a valid email address (up to 254 characters).',
@@ -107,11 +85,9 @@ document.querySelectorAll('.contact-form').forEach(form => {
     if (message) field.setAttribute('aria-invalid', 'true');
     else field.removeAttribute('aria-invalid');
   };
-  const notify = (message, state, offerEmail = false) => {
+  const notify = (message, state) => {
     status.textContent = message;
     status.dataset.state = state;
-    emailFallback.hidden = !offerEmail;
-    if (offerEmail) updateEmailLink();
   };
   const isValid = field => {
     const min = Number(field.getAttribute('minlength') || 0);
@@ -122,8 +98,6 @@ document.querySelectorAll('.contact-form').forEach(form => {
     field.addEventListener('input', () => setFieldError(field));
     field.addEventListener('change', () => setFieldError(field));
   });
-  form.addEventListener('input', updateEmailLink);
-  form.addEventListener('change', updateEmailLink);
   const requested = new URLSearchParams(location.search).get('service');
   if (requested) {
     const match = [...form.elements.service.options].find(option =>
@@ -136,7 +110,7 @@ document.querySelectorAll('.contact-form').forEach(form => {
     const button = form.querySelector('[type=submit]');
     if (button.disabled) return;
     if (form.elements.service.disabled) {
-      notify('Services are temporarily unavailable. You can send your enquiry by email below.', 'error', true);
+      notify('Services are temporarily unavailable. Please try again later.', 'error');
       return;
     }
     fields.forEach(field => {
@@ -150,11 +124,7 @@ document.querySelectorAll('.contact-form').forEach(form => {
       return;
     }
     const values = Object.fromEntries(new FormData(form));
-    const body = JSON.stringify({...values,
-      _subject: 'New Clarigence website enquiry',
-      _template: 'table',
-      _url: location.href
-    });
+    const body = JSON.stringify(values);
     const original = button.innerHTML;
     button.disabled = true;
     button.textContent = 'Sending enquiry…';
@@ -177,7 +147,7 @@ document.querySelectorAll('.contact-form').forEach(form => {
           ? fields.filter(field => Object.hasOwn(result?.fieldErrors || {}, field.name)) : [];
         names.forEach(field => setFieldError(field, messages[field.name]));
         notify(names.length ? 'Please check the highlighted fields.' :
-          'Our enquiry service is temporarily unavailable. Your details are still here. Try again later or send them by email below.', 'error', !names.length);
+          'Our enquiry service is temporarily unavailable. Your details are still here. Please try again later.', 'error');
         if (names.length) names[0].focus();
         return;
       }
@@ -186,7 +156,7 @@ document.querySelectorAll('.contact-form').forEach(form => {
       notify('Thank you. Your enquiry has been accepted for email delivery. We’ll be in touch to discuss your project.', 'success');
       status.focus();
     } catch {
-      notify('We couldn’t confirm delivery of your enquiry. Your details are still here. Try again later or send them by email below.', 'error', true);
+      notify('We couldn’t confirm delivery of your enquiry. Your details are still here. Please try again later.', 'error');
     } finally {
       clearTimeout(timeout);
       button.disabled = false;

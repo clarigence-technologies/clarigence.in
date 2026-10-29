@@ -1,0 +1,13 @@
+{
+  "name": "clarigence-site",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "build": "node scripts/build-static.js",
+    "start": "node scripts/serve-static.js",
+    "test": "node --test scripts/contact-api.test.cjs"
+  },
+  "dependencies": {
+    "nodemailer": "^10.3.0"
+  }
+}

@@ -15,7 +15,7 @@ fs.mkdirSync(output, {recursive: true});
       page.on('pageerror', error => errors.push(error.message));
       let outcome = 'failure';
       const submissions = [];
-      await page.route('https://formsubmit.co/**', async route => {
+      await page.route('**/api/contact', async route => {
         submissions.push(route.request());
         if(outcome==='network')return route.abort('failed');
         if(outcome==='server')return route.fulfill({status:503,json:{message:'private delivery diagnostic'}});
@@ -24,12 +24,12 @@ fs.mkdirSync(output, {recursive: true});
         if(outcome==='validation')return route.fulfill({status:400,json:{fieldErrors:{email:'private email diagnostic'}}});
         if(outcome==='success')await new Promise(resolve=>setTimeout(resolve,250));
         await route.fulfill({status: 200, contentType: 'application/json',
-          body: JSON.stringify({success: outcome === 'success' ? 'true' : 'false'})});
+          body: JSON.stringify({success: outcome === 'success'})});
       });
       await page.goto(`${process.env.QA_ORIGIN || 'http://127.0.0.1:8000'}${path}`);
       await page.waitForFunction(() => !document.querySelector('[name=service]').disabled);
-      const fallback = page.locator('.form-email-fallback');
-      assert.equal(await fallback.isVisible(), false);
+      assert.equal(await page.locator('.form-email-fallback').count(), 0);
+      assert.equal(await page.locator('.contact-form button').count(), 1);
       assert.equal(await page.locator('[name=service] option').count(), 11);
       await page.locator('.form-submit').click();
       assert.equal(submissions.length, 0, 'Invalid details must not be sent');
@@ -50,19 +50,16 @@ fs.mkdirSync(output, {recursive: true});
       await page.locator('.form-submit').click();
       await page.waitForFunction(() => document.querySelector('#form-status').dataset.state === 'error');
       assert.equal(await page.locator('[name=name]').inputValue(), 'Isolated Browser Test');
-      assert(await fallback.isVisible());
       outcome = 'success';
       await page.locator('.form-submit').click();
       assert(await page.locator('.form-submit').isDisabled());
-      assert.equal(await fallback.isVisible(), false);
       await page.waitForFunction(() => document.querySelector('#form-status').dataset.state === 'success');
       assert.equal(await page.locator('[name=name]').inputValue(), '');
-      assert.equal(await fallback.isVisible(), false);
       assert.equal(submissions.length, 2);
       const request = submissions[1];
-      assert.equal(request.url(), 'https://formsubmit.co/ajax/hello@clarigence.in');
+      assert.equal(new URL(request.url()).pathname, '/api/contact');
       assert.equal(request.postDataJSON().email, 'test@example.invalid');
-      assert.equal(request.postDataJSON()._subject, 'New Clarigence website enquiry');
+      assert.equal(request.postDataJSON().service, 'Website Development');
       assert.equal(request.headers()['idempotency-key'], undefined);
       for(const mode of ['validation','server','network','provider','html']){
         outcome=mode;
@@ -77,22 +74,9 @@ fs.mkdirSync(output, {recursive: true});
         assert.equal(await page.locator('[name=name]').inputValue(),'Retained details');
         assert(!(await page.locator('.contact-form').innerText()).includes('private'));
         if(mode==='validation')assert.equal(await page.locator('[name=email]').getAttribute('aria-invalid'),'true');
-        assert.equal(await fallback.isVisible(), mode !== 'validation');
-        if(mode!=='validation'){
-          const draft = new URL(await fallback.locator('a').getAttribute('href'));
-          assert.equal(draft.protocol, 'mailto:');
-          assert.equal(draft.pathname, 'hello@clarigence.in');
-          assert.equal(draft.searchParams.get('subject'), 'Clarigence website enquiry');
-          assert(draft.searchParams.get('body').includes('Name: Retained details'));
-          assert(draft.searchParams.get('body').includes('Email: test@example.invalid'));
-          assert(draft.searchParams.get('body').includes('Service: Website Development'));
-          assert(draft.searchParams.get('body').includes(message));
-          assert((await fallback.innerText()).includes('Send the email there'));
-          await page.locator('[name=name]').fill('Updated enquiry details');
-          const updatedDraft = new URL(await fallback.locator('a').getAttribute('href'));
-          assert(updatedDraft.searchParams.get('body').includes('Name: Updated enquiry details'));
-          assert.equal(await page.locator('[name=message]').inputValue(), message);
-        }
+        assert.equal(await page.locator('.form-email-fallback').count(), 0);
+        assert.equal(await page.locator('.contact-form a[href^="mailto:"]').count(), 0);
+        assert.equal(await page.locator('[name=message]').inputValue(), message);
         assert.equal(submissions.length, previousCount + 1, 'Failures must not automatically resubmit');
         assert(await page.locator('.form-submit').isEnabled());
         if(mode==='provider'){
@@ -104,7 +88,7 @@ fs.mkdirSync(output, {recursive: true});
       assert.deepEqual(errors, []);
       await page.close();
     }
-    console.log('Both email forms passed: validation, success, rejected response, HTTP 521 outage, server/network/invalid JSON failures, retained details, prefilled email fallback and no automatic retries. Desktop/mobile checks passed. No emails sent.');
+    console.log('Both Send enquiry forms passed: same-origin API payload, validation, success, rejected response, server/network/invalid JSON failures, retained details, one submit button, no mail-app fallback and no automatic retries. Desktop/mobile checks passed. No emails sent.');
   } finally {
     await browser.close();
   }

@@ -39,4 +39,4 @@ if (!fs.existsSync(assetsSource)) {
 }
 fs.cpSync(assetsSource, path.join(output, 'assets'), { recursive: true });
 
-console.log(`Prepared static Vercel output in ${path.relative(root, output)}; email enquiries use FormSubmit.`);
+console.log(`Prepared static Vercel output in ${path.relative(root, output)}; email enquiries use /api/contact (SMTP configuration required).`);

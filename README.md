@@ -1,25 +1,29 @@
 # Clarigence.in
 
-The public website deploys to Vercel as static pages. Both enquiry forms deliver
-messages to hello@clarigence.in using FormSubmit. No Railway service, database or
-running Java backend is required. Enquiries do not appear in an admin dashboard.
+The public website deploys to Vercel as static pages with one Node.js email
+function at `/api/contact`. Both enquiry forms send to hello@clarigence.in through
+the configured SMTP mailbox. No Railway service, database or running Java backend
+is required. Enquiries do not appear in an admin dashboard.
 
-See [VERCEL-DEPLOYMENT.md](VERCEL-DEPLOYMENT.md) for deployment and the required
-one-time email activation. Delivery must be confirmed in the recipient mailbox.
+See [VERCEL-DEPLOYMENT.md](VERCEL-DEPLOYMENT.md) for private SMTP configuration and
+deployment. Delivery must be confirmed in the recipient mailbox.
 
 ## Build and deploy
 
 ```text
+npm ci
 node scripts/build-static.js
 vercel --prod
 ```
 
 Run from the repository root. The existing Vercel project is `clarigence.in`.
-The old backend URL environment variables are no longer used.
+The old backend URL environment variables are no longer used. SMTP credentials
+must be configured on Vercel before deploying this change.
 
 ## Preview locally
 
 ```text
+npm ci
 node scripts/build-static.js
 node scripts/serve-static.js
 ```
@@ -37,6 +41,6 @@ Edit shared page content in `scripts/generate-pages.py`, then regenerate the six
 
 The graphic visual layer lives in `visuals.css`. The normal build runs the idempotent `scripts/enhance-visuals.js` step to apply it to all six pages and version the CSS/JavaScript URLs, including after the optional Python generator runs. Original SVG illustrations are in `assets/graphics/`; edit them directly or regenerate them with `node scripts/create-graphics.js`. The existing content, routes, service selection and enquiry integration remain unchanged.
 
-Build locally with `node scripts/build-static.js`. Canonicals and `sitemap.xml` use `https://www.clarigence.in/`; update these together if the primary public domain changes. The public deployment uses no backend or MySQL credentials.
+Build locally with `node scripts/build-static.js`. Canonicals and `sitemap.xml` use `https://www.clarigence.in/`; update these together if the primary public domain changes. The public deployment uses no Java backend or MySQL credentials.
 
 Browser checks: `node scripts/verify-frontend.cjs` requires Playwright in the ignored `.qa-tools` directory and the frontend running on port 8000. This is a testing tool only. Results and screenshots are written to ignored `artifacts/qa/`.
