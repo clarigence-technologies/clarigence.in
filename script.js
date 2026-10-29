@@ -171,6 +171,30 @@ document.querySelectorAll('.contact-form').forEach(form => {
 });
 
 document.querySelectorAll('[data-year]').forEach(node => { node.textContent = new Date().getFullYear(); });
+// Keep the Home heading's gradient continuous while its letters animate separately.
+const heroHeading = document.querySelector('.hero .hero-title');
+if (heroHeading) {
+  const syncHeroGradient = () => {
+    const accent = heroHeading.querySelector('.title-accent');
+    if (!accent) return;
+    // offset measurements exclude the entrance animation's transforms.
+    const width = accent.clientWidth;
+    const height = accent.clientHeight;
+    const letters = [...accent.querySelectorAll('.title-letter')].map(letter => ({
+      letter, x: letter.offsetLeft, y: letter.offsetTop,
+    }));
+    accent.style.setProperty('--accent-width', `${width}px`);
+    accent.style.setProperty('--accent-height', `${height}px`);
+    letters.forEach(({letter, x, y}) => {
+      letter.style.setProperty('--accent-x', `${x}px`);
+      letter.style.setProperty('--accent-y', `${y}px`);
+    });
+  };
+  syncHeroGradient();
+  new ResizeObserver(syncHeroGradient).observe(heroHeading);
+  new MutationObserver(syncHeroGradient).observe(heroHeading, {childList: true, subtree: true});
+  document.fonts.ready.then(syncHeroGradient);
+}
 const motionPreference = window.matchMedia('(prefers-reduced-motion: reduce)');
 const observed = new WeakSet();
 const observer = 'IntersectionObserver' in window ? new IntersectionObserver(entries => entries.forEach(entry => {
