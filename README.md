@@ -21,7 +21,7 @@ The old backend URL environment variables are no longer used.
 
 ```text
 node scripts/build-static.js
-python scripts/serve-static.py
+node scripts/serve-static.js
 ```
 
 Open http://localhost:8000. Public content lives in `content.json`; edit it and
@@ -34,6 +34,8 @@ before they can be brought into this static content file. The Java project in
 The six existing public HTML pages share a lightweight stylesheet and JavaScript, with no runtime framework or added production dependencies. Existing logo and favicon assets are preserved. Service details live at anchors on `services.html`; links from those details preselect a service on the contact page. Portfolio items are explicitly labeled illustrative concepts.
 
 Edit shared page content in `scripts/generate-pages.py`, then regenerate the six HTML pages with `py scripts/generate-pages.py`. CSS and JavaScript remain independently editable. This optional authoring script is not needed to serve or deploy the website.
+
+The graphic visual layer lives in `visuals.css`. The normal build runs the idempotent `scripts/enhance-visuals.js` step to apply it to all six pages and version the CSS/JavaScript URLs, including after the optional Python generator runs. Original SVG illustrations are in `assets/graphics/`; edit them directly or regenerate them with `node scripts/create-graphics.js`. The existing content, routes, service selection and enquiry integration remain unchanged.
 
 Build locally with `node scripts/build-static.js`. Canonicals and `sitemap.xml` use `https://www.clarigence.in/`; update these together if the primary public domain changes. The public deployment uses no backend or MySQL credentials.
 

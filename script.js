@@ -25,7 +25,7 @@ if (servicesGroup && servicesToggle) {
     }
   });
   servicesGroup.addEventListener('keydown', event => {
-    if (event.key === 'Escape') {
+    if (event.key === 'Escape' && servicesToggle.getAttribute('aria-expanded') === 'true') {
       event.stopPropagation();
       setServicesOpen(false, true);
     } else if (event.key === 'ArrowDown' && event.target === servicesToggle) {

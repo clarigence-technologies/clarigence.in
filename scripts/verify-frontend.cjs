@@ -1,151 +1,88 @@
-// Browser QA uses development-only tooling, not a site dependency.
-const { chromium } = require('../.qa-tools/node_modules/playwright');
-const fs = require('node:fs');
-const path = require('node:path');
-const assert = require('node:assert/strict');
-const root = path.resolve(__dirname, '..');
-const output = path.join(root, 'artifacts/qa');
-fs.mkdirSync(output, {recursive:true});
-const pages = ['index.html','about.html','services.html','solutions.html','portfolio.html','contact.html'];
-const widths = [320,360,375,390,412,430,768,1024,1440,1920];
-const origin = 'http://127.0.0.1:8000';
-(async () => {
- const browser = await chromium.launch({channel:'chrome',headless:true});
- const context = await browser.newContext({reducedMotion:'reduce'});
- const page = await context.newPage();
- const issues=[];
- page.on('pageerror',error=>issues.push(error.message));
- page.on('console',message=>{if(message.type()==='error') issues.push(message.text());});
- page.on('response',response=>{if(response.status()>=400 && !response.url().includes('/api/contact')) issues.push(`${response.status()} ${response.url()}`);});
- let layouts = 0;
- const titles=new Set();
- for (const file of (process.env.QA_FORMS_ONLY==='1' ? [] : pages)) {
-  for (const width of widths) {
-   await page.setViewportSize({width,height:900});
-   await page.goto(`${origin}/${file}`);
-   await page.waitForLoadState('networkidle');
-   const layout=await page.evaluate(()=>({viewport:innerWidth,width:document.documentElement.scrollWidth,h1:document.querySelectorAll('h1').length,brokenImages:[...document.images].filter(i=>i.complete&&!i.naturalWidth).map(i=>i.src),unlabeledFields:[...document.querySelectorAll('input,select,textarea')].filter(field=>!field.labels.length).length}));
-   assert(layout.width<=layout.viewport,`${file} overflow at ${width}: ${JSON.stringify(layout)}`);
-   assert.equal(layout.h1,1,`${file}: h1 count`);
-   assert.equal(layout.brokenImages.length,0,`${file}: missing images`);
-   assert.equal(layout.unlabeledFields,0,`${file}: missing form labels`);
-   if(width===1440) {
-    const title=await page.title();assert(!titles.has(title));titles.add(title);
-    await page.screenshot({path:path.join(output,file.replace('.html','-desktop.png')),fullPage:true});
-    if(file==='index.html') await page.screenshot({path:path.join(output,'hero-desktop.png')});
-   }
-   if(width===390) await page.screenshot({path:path.join(output,file.replace('.html','-mobile.png')),fullPage:true});
-   if(width===390 && file==='index.html') await page.screenshot({path:path.join(output,'hero-mobile.png')});
-   if(width<=900){
-    await page.locator('.menu-toggle').click();
-    assert.equal(await page.locator('.menu-toggle').getAttribute('aria-expanded'),'true');
-    assert(await page.locator('.nav-links').isVisible());
-    await page.keyboard.press('Escape');
-    assert.equal(await page.locator('.menu-toggle').getAttribute('aria-expanded'),'false');
+/* Public-site regression checks. All submissions are intercepted; no emails are sent. */
+const {chromium}=require('../.qa-tools/node_modules/playwright');
+const fs=require('node:fs');
+const path=require('node:path');
+const assert=require('node:assert/strict');
+const root=path.resolve(__dirname,'..');
+const output=path.join(root,'artifacts/qa');
+fs.mkdirSync(output,{recursive:true});
+const origin=process.env.QA_ORIGIN||'http://127.0.0.1:8000';
+const routes=['/','/about','/services','/solutions','/portfolio','/contact'];
+const widths=[320,360,375,390,412,430,768,900,1024,1440,1920];
+const content=JSON.parse(fs.readFileSync(path.join(root,'content.json'),'utf8'));
+(async()=>{
+ const browser=await chromium.launch({channel:'chrome',headless:true});
+ try{
+  const context=await browser.newContext({reducedMotion:'reduce'});
+  const page=await context.newPage();
+  const errors=[];
+  page.on('pageerror',e=>errors.push(e.message));
+  page.on('console',m=>{if(m.type()==='error')errors.push(m.text());});
+  page.on('response',r=>{if(r.status()>=400)errors.push(`${r.status()} ${r.url()}`);});
+  let layouts=0;
+  const titles=new Set(),links=new Set();
+  async function layout(label){
+   const state=await page.evaluate(()=>({width:innerWidth,scroll:document.documentElement.scrollWidth,h1:document.querySelectorAll('h1').length,unlabeled:[...document.querySelectorAll('input,select,textarea')].filter(n=>!n.labels.length).length,overflow:[...document.querySelectorAll('main h1,main h2,main h3,.hero-actions,.contact-form,.service-detail,.service-card')].filter(n=>n.getBoundingClientRect().right>innerWidth+1).map(n=>n.className)}));
+   assert(state.scroll<=state.width,`${label} document overflow: ${JSON.stringify(state)}`);
+   assert.equal(state.h1,1,`${label}: one h1`);assert.equal(state.unlabeled,0,`${label}: field labels`);assert.deepEqual(state.overflow,[],`${label}: content bounds`);
+   const cards=await page.locator('.service-card').evaluateAll(nodes=>nodes.filter(n=>n.getClientRects().length).map(n=>{const r=n.getBoundingClientRect();return {width:r.width,top:r.top,title:n.querySelector('h3')?.textContent};}));
+   if(cards.length){
+    const primaryWidth=Math.min(...cards.slice(0,4).map(c=>c.width));
+    // At small desktop widths, primary services use halves and supporting services use thirds.
+    const minimumRatio=state.width>900&&state.width<=1100?.6:.9;
+    for(const card of cards)assert(card.width>=primaryWidth*minimumRatio,`${label}: squeezed service card ${JSON.stringify(card)}`);
+    if(state.width>900&&cards.length===10){const row=cards.slice(-3);assert(row.every(c=>Math.abs(c.top-row[0].top)<1&&Math.abs(c.width-row[0].width)<1),`${label}: final service row must align ${JSON.stringify(row)}`);}
    }
    layouts++;
   }
-  const links=await page.locator('a[href]').evaluateAll(links=>links.map(a=>a.getAttribute('href')));
-  for(const href of links){
-   if(/^(https?:|mailto:|tel:)/.test(href))continue;
-   const url=new URL(href,`${origin}/${file}`);
-   const target=url.pathname.slice(1)||'index.html';
-   assert(fs.existsSync(path.join(root,target)),`Broken file link: ${href}`);
-   if(url.hash){
-    const html=fs.readFileSync(path.join(root,target),'utf8');
-    assert(html.includes(`id="${url.hash.slice(1)}"`),`Broken anchor: ${href}`);
+  for(const route of routes){
+   for(const width of widths){
+    await page.setViewportSize({width,height:900});await page.goto(origin+route);await page.waitForLoadState('networkidle');await page.evaluate(()=>document.fonts.ready);
+    await layout(`${route} ${width}`);
+    assert.equal(await page.locator('[data-nav-services] a').count(),10);
+    if(route==='/'||route==='/services')assert.equal(await page.locator('.service-card').count(),10);
+    if(width<=900){
+     await page.locator('.menu-toggle').click();assert.equal(await page.locator('.menu-toggle').getAttribute('aria-expanded'),'true');
+     await page.locator('.services-toggle').click();assert.equal(await page.locator('.services-toggle').getAttribute('aria-expanded'),'true');
+     await layout(`${route} ${width} menu`);
+     await page.keyboard.press('Escape');assert.equal(await page.locator('.services-toggle').getAttribute('aria-expanded'),'false');
+     await page.keyboard.press('Escape');assert.equal(await page.locator('.menu-toggle').getAttribute('aria-expanded'),'false');
+    }
+    if(width===1440||width===390){
+     // Lazy-loaded assets and entrance effects must be observed throughout the page.
+     await page.evaluate(async()=>{for(let y=0;y<document.body.scrollHeight;y+=700){scrollTo(0,y);await new Promise(r=>setTimeout(r,15));}scrollTo(0,0);});
+     await page.waitForLoadState('networkidle');
+     await page.screenshot({path:path.join(output,`${route==='/'?'home':route.slice(1)}-${width}.png`),fullPage:true});
+     if(route==='/')await page.screenshot({path:path.join(output,`hero-${width}.png`)});
+     assert.deepEqual(await page.locator('img').evaluateAll(nodes=>nodes.filter(n=>n.complete&&!n.naturalWidth).map(n=>n.src)),[],'No missing images');
+    }
+   }
+   const title=await page.title();assert(!titles.has(title),'Unique SEO title');titles.add(title);
+   for(const href of await page.locator('a[href]').evaluateAll(nodes=>nodes.map(n=>n.href)))if(href.startsWith(origin))links.add(href);
+  }
+  for(const href of links){const response=await context.request.get(href);assert(response.ok(),`Broken link ${href}`);}
+  for(const service of content.services){
+   for(const width of [320,768,1440]){
+    await page.setViewportSize({width,height:900});await page.goto(`${origin}/services?service=${service.slug}`);await page.waitForLoadState('networkidle');
+    assert.equal(await page.locator('h1').innerText(),service.name);assert.equal(await page.locator('.service-detail').count(),1);await layout(`${service.slug} ${width}`);
+    assert((await page.locator('.service-detail .button').getAttribute('href')).includes(service.slug));
    }
   }
- }
- await page.setViewportSize({width:390,height:844});
- for(const file of ['contact.html','index.html']) {
-  await page.goto(`${origin}/${file}?service=salesforce-development`);
-  assert.equal(await page.locator('[name=service]').inputValue(),'Salesforce Development');
-  await page.locator('.form-submit').click();
-  assert.equal(await page.locator('#form-status').getAttribute('data-state'),'error');
-  assert.equal(await page.locator('[name=name]').getAttribute('aria-invalid'),'true');
-  await page.locator('[name=name]').fill('Browser QA');
-  await page.locator('[name=email]').fill('qa@example.com');
-  await page.locator('[name=phone]').fill('bad');
-  await page.locator('[name=message]').fill('We would like to discuss a business website.');
-  await page.locator('.form-submit').click();
-  assert.equal(await page.locator('[name=phone]').getAttribute('aria-invalid'),'true');
-  await page.locator('[name=phone]').fill('+91 90000 00000');
-  await page.locator('[name=message]').fill('Short');
-  await page.locator('.form-submit').click();
-  assert.equal(await page.locator('[name=message]').getAttribute('aria-invalid'),'true');
-  await page.locator('[name=message]').fill('We would like to discuss a business website.');
-  let payload;
-  await page.route('http://localhost:8081/api/contact',async route=>{
-   payload=route.request().postDataJSON();
-   await new Promise(resolve=>setTimeout(resolve,150));
-   await route.fulfill({status:201,contentType:'application/json',body:JSON.stringify({id:1,message:'saved'})});
-  });
-  await page.locator('.form-submit').click();
-  assert(await page.locator('.form-submit').isDisabled());
-  await page.waitForFunction(()=>document.querySelector('#form-status').dataset.state==='success');
-  assert.equal(payload.service,'Salesforce Development');
-  assert.deepEqual(Object.keys(payload).sort(),['company','email','message','name','phone','service']);
-  assert.equal(await page.locator('[name=name]').inputValue(),'');
-  await page.unroute('http://localhost:8081/api/contact');
- }
- await page.goto(`${origin}/contact.html`);
- async function fill(){
-  await page.locator('[name=name]').fill('Browser QA');await page.locator('[name=email]').fill('qa@example.com');
-  await page.locator('[name=service]').selectOption('Website Development');await page.locator('[name=message]').fill('We would like to discuss a business website.');
- }
- await fill();
- await page.route('http://localhost:8081/api/contact',route=>route.fulfill({status:400,contentType:'application/json',body:JSON.stringify({fieldErrors:{email:'raw diagnostic'}})}));
- await page.locator('.form-submit').click();
- await page.waitForFunction(()=>document.querySelector('[name=email]').getAttribute('aria-invalid')==='true');
- assert(!(await page.locator('.contact-form').innerText()).includes('raw diagnostic'));
- await page.unroute('http://localhost:8081/api/contact');
- if (process.env.QA_LIVE_API === '1') {
-  await fill();
-  const savedResponse=page.waitForResponse(response=>response.url()==='http://localhost:8081/api/contact' && response.request().method()==='POST');
-  await page.locator('.form-submit').click();
-  const saved=await savedResponse;
-  assert.equal(saved.status(),201);
-  assert((await saved.json()).id>0);
-  await page.waitForFunction(()=>document.querySelector('#form-status').dataset.state==='success');
-  const protectedResponse=await context.request.get('http://localhost:8081/api/admin/enquiries');
-  assert.equal(protectedResponse.status(),401);
-  await fill();
- }
- await page.route('http://localhost:8081/api/contact',route=>route.fulfill({status:503,contentType:'application/json',body:JSON.stringify({message:'private backend diagnostic'})}));
- await page.locator('.form-submit').click();
- await page.waitForFunction(()=>document.querySelector('#form-status').textContent.includes('right now'));
- assert(!(await page.locator('.contact-form').innerText()).includes('private backend diagnostic'));
- assert.equal(await page.locator('[name=name]').inputValue(),'Browser QA');
- await page.unroute('http://localhost:8081/api/contact');
- await page.route('http://localhost:8081/api/contact',route=>route.abort('failed'));
- await page.locator('.form-submit').click();
- await page.waitForFunction(()=>document.querySelector('#form-status').textContent.includes('confirm'));
- await page.unroute('http://localhost:8081/api/contact');
- // Expected fetch failures from deliberate error scenarios do not describe page regressions.
- const unexpected=issues.filter(issue=>!issue.includes('localhost:8081')&&!issue.includes('Failed to load resource'));
- assert.equal(unexpected.length,0,JSON.stringify(unexpected));
- await page.emulateMedia({reducedMotion:'no-preference'});
- await page.goto(`${origin}/index.html`);
- assert.equal(await page.locator('.visual-tile').first().evaluate(node=>getComputedStyle(node).animationName),'float');
- await page.emulateMedia({reducedMotion:'reduce'});
- assert.equal(await page.locator('.visual-tile').first().evaluate(node=>getComputedStyle(node).animationName),'none');
- await page.waitForFunction(()=>document.querySelectorAll('.reveal-pending').length===0);
- const previous=fs.existsSync(path.join(output,'report.json')) ? JSON.parse(fs.readFileSync(path.join(output,'report.json'),'utf8')) : {};
- const report={layouts:layouts || previous.layouts || 0,pages:pages.length,widths,internalLinks:layouts?'passed':previous.internalLinks,navigation:layouts?'passed':previous.navigation,form:'validation, loading, payload, success, server validation, server error, network failure passed',reducedMotion:'initial and dynamically changed preference passed',liveApi:process.env.QA_LIVE_API==='1'?'real browser POST passed against isolated H2 backend; unauthenticated admin denied':'not requested',backend:'14 existing integration tests passed separately',screenshots:'desktop and mobile for all six pages'};
- fs.writeFileSync(path.join(output,'report.json'),JSON.stringify(report,null,2));
- console.log(JSON.stringify(report,null,2));
- if(process.env.QA_REFERENCE==='1') {
-  const reference=await context.newPage();
-  try {
-   await reference.setViewportSize({width:1440,height:1000});
-   await reference.goto('https://www.avimaytech.com/',{waitUntil:'domcontentloaded',timeout:30000});
-   await reference.screenshot({path:path.join(output,'reference-desktop.png')});
-   await reference.setViewportSize({width:390,height:844});
-   await reference.screenshot({path:path.join(output,'reference-mobile.png')});
-   console.log('Reference desktop and mobile visual inspection captured.');
-  } catch(error){console.log('Reference screenshot unavailable:',error.message.split('\n')[0]);}
-  await reference.close();
- }
- await browser.close();
-})().catch(error=>{console.error(error);process.exit(1);});
+  await page.goto(`${origin}/services#salesforce-development`);await page.waitForLoadState('networkidle');assert.equal(await page.locator('h1').innerText(),'Salesforce Development');
+  await page.goto(`${origin}/contact?service=salesforce-development`);await page.waitForLoadState('networkidle');assert.equal(await page.locator('[name=service]').inputValue(),'Salesforce Development');
+  await page.goto(origin+'/');await page.waitForLoadState('networkidle');
+  assert.equal(await page.locator('.process-grid article').count(),6);
+  await page.locator('.project-copy summary').first().click();assert(await page.locator('.project-copy details').first().getAttribute('open')!==null);
+  assert.equal(await page.locator('.concept-badge').count(),2);
+  await page.emulateMedia({reducedMotion:'no-preference'});await page.goto(origin+'/');await page.waitForLoadState('networkidle');
+  assert((await page.locator('.hero-visual').evaluate(n=>getComputedStyle(n).animationName)).includes('artwork-arrive'));
+  await page.emulateMedia({reducedMotion:'reduce'});assert.equal(await page.locator('.hero-visual').evaluate(n=>getComputedStyle(n).animationName),'none');assert.equal(await page.locator('.reveal-pending').count(),0);
+  // CMS content must remain plain text; published work must not inherit a demo badge.
+  const fixture=structuredClone(content);fixture.services[0].name='<img src=x onerror=alert(1)>';fixture.portfolio=[{...fixture.portfolio[0],concept:false,title:'Published example',imageUrl:'assets/images/clarigence-logo.png'}];
+  await page.route('**/content.json',r=>r.fulfill({json:fixture}));await page.goto(origin+'/portfolio');await page.waitForLoadState('networkidle');assert.equal(await page.locator('.concept-badge').count(),0);assert.equal(await page.locator('.project-image').count(),1);assert((await page.locator('.service-menu-link').first().textContent()).includes('<img src=x onerror=alert(1)>'));assert.equal(await page.locator('.service-menu-link img').count(),0);
+  await page.unroute('**/content.json');
+  assert.deepEqual(errors,[],'No runtime, console, network or missing asset errors');
+  const report={layouts,routes:routes.length,serviceDetails:content.services.length,widths,internalLinks:links.size,assets:'passed',serviceCardAlignment:'minimum widths and complete final row passed',navigation:'mobile and desktop passed',serviceSelection:'query and legacy anchor passed',portfolio:'concept and published content passed',cms:'text escaping and current content schema passed',motion:'initial and dynamic reduced motion passed',errors};
+  fs.writeFileSync(path.join(output,'redesign-report.json'),JSON.stringify(report,null,2));console.log(JSON.stringify(report,null,2));
+ }finally{await browser.close();}
+})().catch(e=>{console.error(e);process.exitCode=1;});
