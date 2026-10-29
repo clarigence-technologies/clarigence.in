@@ -157,6 +157,8 @@ h1,h2,h3{font-family:var(--sans);letter-spacing:-.04em}
 .cta-box>.button{background:#fff;color:#1744b3}
 .cta-box>.button:hover{background:#e9f4ff;color:#103895}
 .page-hero{
+  /* The banner itself is the wrap; inset its content from both gradient edges. */
+  padding-inline:clamp(20px,4vw,56px);
   background:radial-gradient(ellipse at 100% 0,#dfd3ff99,transparent 55%),linear-gradient(110deg,#f4f8ff,#eaf2ff);
   border-color:#cddcf8;
 }
