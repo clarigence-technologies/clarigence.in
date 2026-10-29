@@ -201,7 +201,6 @@
     heading.setAttribute('aria-label',value.replaceAll('\n',' '));heading.replaceChildren();
     value.split('\n').forEach((line,lineIndex)=>{
       const row=node('span',`title-line${lineIndex===value.split('\n').length-1?' title-accent':''}`);row.setAttribute('aria-hidden','true');let offset=0;
-      row.style.setProperty('--letter-delay',`${lineIndex*.25-elapsed}s`);
       line.split(' ').forEach((word,index)=>{
         if(index)row.append(document.createTextNode(' '));const wrapper=node('span','title-word');
         [...word].forEach((letter,i)=>{const part=node('span','title-letter',letter);part.style.setProperty('--letter-delay',`${lineIndex*.25+(offset+i)*.024-elapsed}s`);wrapper.append(part);});
