@@ -17,15 +17,7 @@ h1,h2,h3{font-family:var(--sans);letter-spacing:-.04em}
 .hero{position:relative;isolation:isolate;grid-template-columns:1.06fr 1fr;gap:50px;padding-block:65px 60px}
 .hero:before{content:'';position:absolute;z-index:-1;inset:-25px -20px 0 45%;background:radial-gradient(ellipse at 58% 48%,#d8edff70,transparent 64%);pointer-events:none}
 .hero .hero-title{font-size:clamp(44px,4.85vw,68px);letter-spacing:-.045em;line-height:1.1;margin-bottom:24px}
-.hero .title-accent{
-  background:var(--accent-gradient);
-  background-clip:text;
-  -webkit-background-clip:text;
-  -webkit-text-fill-color:transparent;
-  /* Include descenders in the gradient's paint box; animate that box as one surface. */
-  padding-bottom:.14em;
-  animation:title-arrive 580ms cubic-bezier(.18,.72,.24,1.18) var(--letter-delay,.5s) both;
-}
+.hero .title-accent{background:var(--accent-gradient);background-clip:text;-webkit-background-clip:text;-webkit-text-fill-color:transparent}
 .hero .title-accent .title-word,.hero .title-accent .title-letter{display:contents;animation:none;transform:none;filter:none}
 .hero .eyebrow{font-size:11px;margin-bottom:23px;background:#eef5ff;border-color:#dbe8fd;padding:5px 13px}
 .hero-lede{font-size:17px;line-height:1.8;max-width:540px}
