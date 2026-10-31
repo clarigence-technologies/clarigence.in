@@ -76,6 +76,7 @@ for file,(title,description,body) in CONTENT.items():
  if file=='portfolio.html':
   body=body.replace('PORTFOLIO / DESIGN CONCEPTS','OUR PORTFOLIO').replace('These original visual explorations show possible directions for digital experiences. They are concepts, not delivered client projects or live products.','Explore our published work and digital explorations. Any demo or concept is clearly labeled.')
  if file=='index.html':
+  body=body.replace('<section class="value-strip">', '<section class="section client-section" data-clients-section hidden aria-labelledby="clients-heading"><div class="wrap"><div class="clients-heading"><p class="eyebrow">OUR HAPPY CLIENTS</p><h2 id="clients-heading">Trusted by growing businesses.</h2></div><div class="client-logo-grid" data-clients></div></div></section><section class="value-strip">')
   body=body.replace('<h1>Grow Your<br>Business With<br><span>Technology.</span></h1>', '<h1 class="hero-title"><span class="title-line">Grow Your</span> <span class="title-line">Business With</span> <span class="title-line title-accent">Technology.</span></h1>')
   lines=[]
   for line_number,line in enumerate(['Grow Your','Business With','Technology.']):

@@ -287,9 +287,8 @@
       "technologies": [],
       "concept": false,
       "featured": true,
-      "imageUrl": "",
-      "projectUrl": "https://prashants-07.github.io/Sinnar-Mobile/",
-      "logoUrl": "assets/graphics/logo-sinnar-mobile.svg"
+      "imageUrl": "assets/images/sinnar-mobile.png",
+      "projectUrl": "https://prashants-07.github.io/Sinnar-Mobile/"
     },
     {
       "title": "Carewell Hospital Nashik",
@@ -299,9 +298,8 @@
       "technologies": [],
       "concept": false,
       "featured": true,
-      "imageUrl": "",
-      "projectUrl": "https://carewellhospitalnashik.netlify.app/",
-      "logoUrl": "assets/graphics/logo-carewell.svg"
+      "imageUrl": "assets/images/carewell-hospital.png",
+      "projectUrl": "https://carewellhospitalnashik.netlify.app/"
     },
     {
       "title": "Aurelia Estates",
@@ -311,9 +309,8 @@
       "technologies": [],
       "concept": false,
       "featured": true,
-      "imageUrl": "",
-      "projectUrl": "https://clarigence-aurelia-estates.netlify.app/",
-      "logoUrl": "assets/graphics/logo-aurelia.svg"
+      "imageUrl": "assets/images/aurelia-estates-v2.png",
+      "projectUrl": "https://clarigence-aurelia-estates.netlify.app/"
     },
     {
       "title": "Ledger Billing",
@@ -323,9 +320,8 @@
       "technologies": [],
       "concept": false,
       "featured": false,
-      "imageUrl": "",
-      "projectUrl": "",
-      "logoUrl": "assets/graphics/logo-ledger.svg"
+      "imageUrl": "assets/images/ledger-billing.png",
+      "projectUrl": ""
     },
     {
       "title": "Digital presence, reimagined.",
@@ -338,8 +334,7 @@
       "concept": true,
       "featured": true,
       "imageUrl": "",
-      "projectUrl": "",
-      "logoUrl": "assets/graphics/logo-digital-presence.svg"
+      "projectUrl": ""
     },
     {
       "title": "Shopping, made simpler.",
@@ -352,8 +347,7 @@
       "concept": true,
       "featured": true,
       "imageUrl": "",
-      "projectUrl": "",
-      "logoUrl": "assets/graphics/logo-shopping.svg"
+      "projectUrl": ""
     },
     {
       "title": "Workflows in sync.",
@@ -366,8 +360,7 @@
       "concept": true,
       "featured": false,
       "imageUrl": "",
-      "projectUrl": "",
-      "logoUrl": "assets/graphics/logo-workflows.svg"
+      "projectUrl": ""
     },
     {
       "title": "Ready for what’s next.",
@@ -380,8 +373,29 @@
       "concept": true,
       "featured": false,
       "imageUrl": "",
-      "projectUrl": "",
-      "logoUrl": "assets/graphics/logo-cloud.svg"
+      "projectUrl": ""
+    }
+  ],
+  "clients": [
+    {
+      "name": "Sinnar Mobile",
+      "logoUrl": "assets/clients/sinnar-mobile.png",
+      "websiteUrl": "https://prashants-07.github.io/Sinnar-Mobile/"
+    },
+    {
+      "name": "Carewell Hospital Nashik",
+      "logoUrl": "assets/clients/carewell-hospital.png",
+      "websiteUrl": "https://carewellhospitalnashik.netlify.app/"
+    },
+    {
+      "name": "Aurelia Estates",
+      "logoUrl": "assets/clients/aurelia-estates.png",
+      "websiteUrl": "https://clarigence-aurelia-estates.netlify.app/"
+    },
+    {
+      "name": "Ledger Billing",
+      "logoUrl": "assets/clients/ledger-billing.png",
+      "websiteUrl": ""
     }
   ]
 }

@@ -1,5 +1,0 @@
-const {chromium}=require('../.qa-tools/node_modules/playwright');
-(async()=>{const b=await chromium.launch({channel:'chrome',headless:true});try{const p=await b.newPage({reducedMotion:'reduce'});for(const width of [390,1440]){await p.setViewportSize({width,height:900});await p.goto('http://localhost:8000/portfolio');await p.waitForSelector('.project-symbol');await p.locator('.work-card').last().scrollIntoViewIfNeeded();await p.locator('.project-symbol').evaluateAll(nodes=>Promise.all(nodes.map(n=>{n.loading='eager';return n.decode();})));await p.waitForLoadState('networkidle');const s=await p.evaluate(()=>({overflow:document.documentElement.scrollWidth>innerWidth,icons:[...document.querySelectorAll('.project-symbol')].map(n=>({width:n.getBoundingClientRect().width,loaded:n.complete&&n.naturalWidth>0}))}));if(s.overflow||s.icons.length!==8||s.icons.some(i=>!i.loaded||i.width>220))throw Error(JSON.stringify(s));await p.screenshot({path:`artifacts/qa/portfolio-symbols-${width}.png`,fullPage:true});console.log(`${width}px: 8 loaded compact symbols, no overflow`);}}finally{await b.close();}})().catch(e=>{console.error(e);process.exit(1);});
-
-
-

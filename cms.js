@@ -170,14 +170,12 @@
         if(!selected.length){status(container,'No published projects to show yet. Let’s discuss what we could build for your business.','empty');continue;}
         selected.forEach(project=>{
           const article=node('article','work-card');const art=node('div','project-art');
-          const category=(project.category||'').toLowerCase();
-          const symbol=category.includes('retail')?'mobile':category.includes('health')?'hospital':category.includes('estate')?'property':category.includes('billing')?'billing':category.includes('commerce')?'commerce':category.includes('crm')?'crm':category.includes('cloud')?'cloud':'website';
-          art.classList.add('project-symbol-art');
-          const logoNames=['sinnar-mobile','carewell','aurelia','ledger','digital-presence','shopping','workflows','cloud'];
-          const logoName=logoNames.find(name=>project.logoUrl===`assets/graphics/logo-${name}.svg`);
-          const logo=designGraphic(logoName?`logo-${logoName}`:`portfolio-${symbol}`,logoName?`${project.title} logo`:'','project-symbol');
-          if(logoName)logo.classList.add('project-brand-logo');
-          art.append(logo);
+          if(project.imageUrl)art.append(image(project.imageUrl,project.title,'project-image'));
+          else if(project.concept){
+            const category=(project.category||'').toLowerCase();const kind=category.includes('commerce')?'commerce':category.includes('crm')?'crm':category.includes('cloud')?'cloud':'website';
+            art.append(designGraphic(`${kind}-concept`,`Illustrative ${project.category||'digital'} concept preview`,'concept-preview'));
+          }
+          else{const visual=node('div','mock-window');visual.setAttribute('aria-hidden','true');const inside=node('div','mock-body');inside.append(node('span','mock-label',project.category||'PROJECT'),node('strong','',project.title));visual.append(inside);art.append(visual);}
           if(project.concept)art.append(node('span','concept-badge','DEMO / CONCEPT'));
           const copy=node('div','project-copy');copy.append(node('p','eyebrow',project.category||'Project'),node('h3','',project.title),node('p','',project.shortDescription));
           if(project.technologies?.length)copy.append(node('p','technology',project.technologies.join(' · ')));
@@ -251,5 +249,25 @@
       }):Promise.resolve())
     ]);
   }
-  Promise.allSettled([services(),portfolio(),content()]);
+  async function clients(){
+    const section=document.querySelector('[data-clients-section]');if(!section)return;
+    try{
+      const data=await requests.get('content');
+      const grid=section.querySelector('[data-clients]');
+      for(const client of data.clients||[]){
+        const href=safeUrl(client.websiteUrl,false,true);
+        const logo=safeUrl(client.logoUrl,true);
+        if(!client.name||!logo)continue;
+        const item=node(href?'a':'div','client-logo-link');
+        if(href){
+          item.href=href;item.target='_blank';item.rel='noopener noreferrer';
+          item.setAttribute('aria-label',`Visit ${client.name} website (opens in a new tab)`);
+        }
+        item.append(image(client.logoUrl,`${client.name} logo`,'client-logo'));
+        grid.append(item);
+      }
+      section.hidden=!grid.children.length;
+    }catch{section.hidden=true;}
+  }
+  Promise.allSettled([services(),portfolio(),content(),clients()]);
 })();
