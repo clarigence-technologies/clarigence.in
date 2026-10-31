@@ -5,6 +5,7 @@
 .vercel/
 dist/
 .qa-tools/
+node_modules/
 artifacts/qa/
 __pycache__/
 

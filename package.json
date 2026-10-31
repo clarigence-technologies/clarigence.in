@@ -1,0 +1,13 @@
+﻿{
+  "name": "clarigence.in",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Clarigence website and Titan SMTP enquiry endpoint",
+  "scripts": {
+    "build": "node scripts/build-static.js",
+    "test": "node --test scripts/contact-api.test.cjs"
+  },
+  "dependencies": {
+    "nodemailer": "^10.3.0"
+  }
+}

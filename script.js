@@ -89,6 +89,18 @@ document.querySelectorAll('.contact-form').forEach(form => {
     status.textContent = message;
     status.dataset.state = state;
   };
+  const offerEmailFallback = message => {
+    notify(message, 'error');
+    const values = Object.fromEntries(new FormData(form));
+    const details = ['Name', 'Email', 'Phone', 'Company', 'Service', 'Message']
+      .map(label => `${label}: ${values[label.toLowerCase()] || ''}`).join('\n\n');
+    const link = document.createElement('a');
+    link.textContent = 'Email your enquiry to hello@clarigence.in';
+    link.href = `mailto:hello@clarigence.in?subject=${encodeURIComponent('New Clarigence website enquiry')}&body=${encodeURIComponent(details)}`;
+    status.append(document.createTextNode(' '), link,
+      document.createTextNode(' Your details are included in the email draft. Please send it from your email app.'));
+    status.focus();
+  };
   const isValid = field => {
     const min = Number(field.getAttribute('minlength') || 0);
     const max = Number(field.getAttribute('maxlength') || Infinity);
@@ -150,8 +162,8 @@ document.querySelectorAll('.contact-form').forEach(form => {
         const names = response.status === 400
           ? fields.filter(field => Object.hasOwn(result?.fieldErrors || {}, field.name)) : [];
         names.forEach(field => setFieldError(field, messages[field.name]));
-        notify(names.length ? 'Please check the highlighted fields.' :
-          'We couldn’t send your enquiry right now. Please try again or email hello@clarigence.in.', 'error');
+        if (names.length) notify('Please check the highlighted fields.', 'error');
+        else offerEmailFallback('Our form delivery service is temporarily unavailable. Your enquiry has not been confirmed.');
         if (names.length) names[0].focus();
         return;
       }
@@ -160,7 +172,7 @@ document.querySelectorAll('.contact-form').forEach(form => {
       notify('Thank you. Your enquiry has been accepted for email delivery. We’ll be in touch to discuss your project.', 'success');
       status.focus();
     } catch {
-      notify('We couldn’t confirm your enquiry. Please try again later or email hello@clarigence.in.', 'error');
+      offerEmailFallback('We couldn’t confirm your enquiry. Your details are still in the form.');
     } finally {
       clearTimeout(timeout);
       button.disabled = false;
