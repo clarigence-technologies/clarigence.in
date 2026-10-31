@@ -17,26 +17,16 @@ fs.mkdirSync(output, {recursive: true});
       const submissions = [];
       await page.route('**/api/contact', async route => {
         submissions.push(route.request());
-<<<<<<< HEAD
-        if (outcome === 'offline') return route.abort('failed');
-        if (outcome === 'outage') return route.fulfill({status: 521,
-          contentType: 'text/plain', body: 'error code: 521'});
-=======
         if(outcome==='network')return route.abort('failed');
         if(outcome==='server')return route.fulfill({status:503,json:{message:'private delivery diagnostic'}});
         if(outcome==='provider')return route.fulfill({status:521,contentType:'text/plain',body:'Web server is down'});
         if(outcome==='html')return route.fulfill({status:200,contentType:'text/html',body:'<html>Service unavailable</html>'});
         if(outcome==='validation')return route.fulfill({status:400,json:{fieldErrors:{email:'private email diagnostic'}}});
         if(outcome==='success')await new Promise(resolve=>setTimeout(resolve,250));
->>>>>>> aa121380a22126890a726815ea76a6f7c4c22044
         await route.fulfill({status: 200, contentType: 'application/json',
           body: JSON.stringify({success: outcome === 'success'})});
       });
-<<<<<<< HEAD
-      await page.goto(`${process.env.FORM_TEST_BASE_URL || 'http://127.0.0.1:8012'}${path}`);
-=======
       await page.goto(`${process.env.QA_ORIGIN || 'http://127.0.0.1:8000'}${path}`);
->>>>>>> aa121380a22126890a726815ea76a6f7c4c22044
       await page.waitForFunction(() => !document.querySelector('[name=service]').disabled);
       assert.equal(await page.locator('.form-email-fallback').count(), 0);
       assert.equal(await page.locator('.contact-form button').count(), 1);
@@ -79,16 +69,9 @@ fs.mkdirSync(output, {recursive: true});
       assert(await page.locator('.form-submit').isDisabled());
       await page.waitForFunction(() => document.querySelector('#form-status').dataset.state === 'success');
       assert.equal(await page.locator('[name=name]').inputValue(), '');
-<<<<<<< HEAD
-      assert.equal(await page.locator('#form-status a').count(), 0);
-      assert.equal(submissions.length, 4);
-      const request = submissions[3];
-      assert.equal(request.url(), 'https://formsubmit.co/ajax/hello@clarigence.in');
-=======
       assert.equal(submissions.length, 2);
       const request = submissions[1];
       assert.equal(new URL(request.url()).pathname, '/api/contact');
->>>>>>> aa121380a22126890a726815ea76a6f7c4c22044
       assert.equal(request.postDataJSON().email, 'test@example.invalid');
       assert.equal(request.postDataJSON().service, 'Website Development');
       assert.equal(request.headers()['idempotency-key'], undefined);
@@ -119,11 +102,7 @@ fs.mkdirSync(output, {recursive: true});
       assert.deepEqual(errors, []);
       await page.close();
     }
-<<<<<<< HEAD
-    console.log('Both forms passed: validation, rejected response, provider 521 outage, network failure, email draft fallback, retained details, recovery and payload. No emails sent.');
-=======
     console.log('Both Send enquiry forms passed: same-origin API payload, validation, success, rejected response, server/network/invalid JSON failures, retained details, one submit button, no mail-app fallback and no automatic retries. Desktop/mobile checks passed. No emails sent.');
->>>>>>> aa121380a22126890a726815ea76a6f7c4c22044
   } finally {
     await browser.close();
   }

@@ -158,13 +158,8 @@ document.querySelectorAll('.contact-form').forEach(form => {
         const names = response.status === 400
           ? fields.filter(field => Object.hasOwn(result?.fieldErrors || {}, field.name)) : [];
         names.forEach(field => setFieldError(field, messages[field.name]));
-<<<<<<< HEAD
         if (names.length) notify('Please check the highlighted fields.', 'error');
         else offerEmailFallback('Our form delivery service is temporarily unavailable. Your enquiry has not been confirmed.');
-=======
-        notify(names.length ? 'Please check the highlighted fields.' :
-          'Our enquiry service is temporarily unavailable. Your details are still here. Please try again later.', 'error');
->>>>>>> aa121380a22126890a726815ea76a6f7c4c22044
         if (names.length) names[0].focus();
         return;
       }
@@ -173,11 +168,7 @@ document.querySelectorAll('.contact-form').forEach(form => {
       notify('Thank you. Your enquiry has been accepted for email delivery. We’ll be in touch to discuss your project.', 'success');
       status.focus();
     } catch {
-<<<<<<< HEAD
       offerEmailFallback('We couldn’t confirm your enquiry. Your details are still in the form.');
-=======
-      notify('We couldn’t confirm delivery of your enquiry. Your details are still here. Please try again later.', 'error');
->>>>>>> aa121380a22126890a726815ea76a6f7c4c22044
     } finally {
       clearTimeout(timeout);
       button.disabled = false;
