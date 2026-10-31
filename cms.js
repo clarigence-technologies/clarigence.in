@@ -173,7 +173,11 @@
           const category=(project.category||'').toLowerCase();
           const symbol=category.includes('retail')?'mobile':category.includes('health')?'hospital':category.includes('estate')?'property':category.includes('billing')?'billing':category.includes('commerce')?'commerce':category.includes('crm')?'crm':category.includes('cloud')?'cloud':'website';
           art.classList.add('project-symbol-art');
-          art.append(designGraphic(`portfolio-${symbol}`,'','project-symbol'));
+          const logoNames=['sinnar-mobile','carewell','aurelia','ledger','digital-presence','shopping','workflows','cloud'];
+          const logoName=logoNames.find(name=>project.logoUrl===`assets/graphics/logo-${name}.svg`);
+          const logo=designGraphic(logoName?`logo-${logoName}`:`portfolio-${symbol}`,logoName?`${project.title} logo`:'','project-symbol');
+          if(logoName)logo.classList.add('project-brand-logo');
+          art.append(logo);
           if(project.concept)art.append(node('span','concept-badge','DEMO / CONCEPT'));
           const copy=node('div','project-copy');copy.append(node('p','eyebrow',project.category||'Project'),node('h3','',project.title),node('p','',project.shortDescription));
           if(project.technologies?.length)copy.append(node('p','technology',project.technologies.join(' · ')));

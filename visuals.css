@@ -190,3 +190,9 @@ h1,h2,h3{font-family:var(--sans);letter-spacing:-.04em}
 .project-symbol-art .project-symbol{display:block;width:72px;height:72px;object-fit:contain;flex-shrink:0}
 .project-symbol-art .concept-badge{position:static;margin-left:16px;font-size:9px;color:#4565cf;background:#edf2ff;border-color:#e0e7fc}
 @media(max-width:600px){.project-art.project-symbol-art{height:96px;padding:20px 24px 0}.project-symbol-art .project-symbol{width:60px;height:60px}}
+
+/* Project-specific wordmarks replace uploaded portfolio screenshots. */
+.project-symbol-art .project-brand-logo{width:220px;height:68px;max-width:100%;object-fit:contain;object-position:left center}
+.project-art.project-symbol-art{height:104px;flex-wrap:wrap;gap:8px}
+.project-symbol-art .concept-badge{margin-left:0;font-size:8px}
+@media(max-width:600px){.project-symbol-art .project-brand-logo{width:195px;height:60px}.project-art.project-symbol-art{height:auto;min-height:88px}.project-symbol-art .concept-badge{margin-top:0}}

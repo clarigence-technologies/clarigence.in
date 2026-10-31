@@ -287,8 +287,9 @@
       "technologies": [],
       "concept": false,
       "featured": true,
-      "imageUrl": "assets/images/sinnar-mobile.png",
-      "projectUrl": "https://prashants-07.github.io/Sinnar-Mobile/"
+      "imageUrl": "",
+      "projectUrl": "https://prashants-07.github.io/Sinnar-Mobile/",
+      "logoUrl": "assets/graphics/logo-sinnar-mobile.svg"
     },
     {
       "title": "Carewell Hospital Nashik",
@@ -298,8 +299,9 @@
       "technologies": [],
       "concept": false,
       "featured": true,
-      "imageUrl": "assets/images/carewell-hospital.png",
-      "projectUrl": "https://carewellhospitalnashik.netlify.app/"
+      "imageUrl": "",
+      "projectUrl": "https://carewellhospitalnashik.netlify.app/",
+      "logoUrl": "assets/graphics/logo-carewell.svg"
     },
     {
       "title": "Aurelia Estates",
@@ -309,8 +311,9 @@
       "technologies": [],
       "concept": false,
       "featured": true,
-      "imageUrl": "assets/images/aurelia-estates-v2.png",
-      "projectUrl": "https://clarigence-aurelia-estates.netlify.app/"
+      "imageUrl": "",
+      "projectUrl": "https://clarigence-aurelia-estates.netlify.app/",
+      "logoUrl": "assets/graphics/logo-aurelia.svg"
     },
     {
       "title": "Ledger Billing",
@@ -320,8 +323,9 @@
       "technologies": [],
       "concept": false,
       "featured": false,
-      "imageUrl": "assets/images/ledger-billing.png",
-      "projectUrl": ""
+      "imageUrl": "",
+      "projectUrl": "",
+      "logoUrl": "assets/graphics/logo-ledger.svg"
     },
     {
       "title": "Digital presence, reimagined.",
@@ -334,7 +338,8 @@
       "concept": true,
       "featured": true,
       "imageUrl": "",
-      "projectUrl": ""
+      "projectUrl": "",
+      "logoUrl": "assets/graphics/logo-digital-presence.svg"
     },
     {
       "title": "Shopping, made simpler.",
@@ -347,7 +352,8 @@
       "concept": true,
       "featured": true,
       "imageUrl": "",
-      "projectUrl": ""
+      "projectUrl": "",
+      "logoUrl": "assets/graphics/logo-shopping.svg"
     },
     {
       "title": "Workflows in sync.",
@@ -360,7 +366,8 @@
       "concept": true,
       "featured": false,
       "imageUrl": "",
-      "projectUrl": ""
+      "projectUrl": "",
+      "logoUrl": "assets/graphics/logo-workflows.svg"
     },
     {
       "title": "Ready for what’s next.",
@@ -373,7 +380,8 @@
       "concept": true,
       "featured": false,
       "imageUrl": "",
-      "projectUrl": ""
+      "projectUrl": "",
+      "logoUrl": "assets/graphics/logo-cloud.svg"
     }
   ]
 }
