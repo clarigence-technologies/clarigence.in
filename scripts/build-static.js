@@ -2,6 +2,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 
 const root = path.resolve(__dirname, '..');
+require('./enhance-visuals.js');
 const output = path.join(root, 'dist');
 const publicFiles = [
   'index.html',
@@ -11,6 +12,7 @@ const publicFiles = [
   'portfolio.html',
   'contact.html',
   'styles.css',
+  'visuals.css',
   'script.js',
   'cms.js',
   'content.json',
@@ -37,4 +39,4 @@ if (!fs.existsSync(assetsSource)) {
 }
 fs.cpSync(assetsSource, path.join(output, 'assets'), { recursive: true });
 
-console.log(`Prepared static Vercel output in ${path.relative(root, output)}; email enquiries use FormSubmit.`);
+console.log(`Prepared static Vercel output in ${path.relative(root, output)}; email enquiries use /api/contact (SMTP configuration required).`);

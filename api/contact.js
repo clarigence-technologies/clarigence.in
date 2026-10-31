@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 const nodemailer = require('nodemailer');
 const services = new Set(require('../content.json').services.filter(s => s.active).map(s => s.name));
 const mailbox = 'hello@clarigence.in';
@@ -55,3 +56,7 @@ module.exports = async function contact(req, res) {
     transport.close();
   }
 };
+=======
+// Vercel Function: SMTP credentials stay on the server.
+module.exports = require('../lib/contact-handler').createContactHandler();
+>>>>>>> aa121380a22126890a726815ea76a6f7c4c22044

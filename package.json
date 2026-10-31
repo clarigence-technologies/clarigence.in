@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 ﻿{
   "name": "clarigence.in",
   "version": "1.0.0",
@@ -5,6 +6,15 @@
   "description": "Clarigence website and Titan SMTP enquiry endpoint",
   "scripts": {
     "build": "node scripts/build-static.js",
+=======
+{
+  "name": "clarigence-site",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "build": "node scripts/build-static.js",
+    "start": "node scripts/serve-static.js",
+>>>>>>> aa121380a22126890a726815ea76a6f7c4c22044
     "test": "node --test scripts/contact-api.test.cjs"
   },
   "dependencies": {

@@ -25,7 +25,7 @@ if (servicesGroup && servicesToggle) {
     }
   });
   servicesGroup.addEventListener('keydown', event => {
-    if (event.key === 'Escape') {
+    if (event.key === 'Escape' && servicesToggle.getAttribute('aria-expanded') === 'true') {
       event.stopPropagation();
       setServicesOpen(false, true);
     } else if (event.key === 'ArrowDown' && event.target === servicesToggle) {
@@ -122,7 +122,7 @@ document.querySelectorAll('.contact-form').forEach(form => {
     const button = form.querySelector('[type=submit]');
     if (button.disabled) return;
     if (form.elements.service.disabled) {
-      notify('Services are temporarily unavailable. Please try again later or contact us by email.', 'error');
+      notify('Services are temporarily unavailable. Please try again later.', 'error');
       return;
     }
     fields.forEach(field => {
@@ -136,11 +136,7 @@ document.querySelectorAll('.contact-form').forEach(form => {
       return;
     }
     const values = Object.fromEntries(new FormData(form));
-    const body = JSON.stringify({...values,
-      _subject: 'New Clarigence website enquiry',
-      _template: 'table',
-      _url: location.href
-    });
+    const body = JSON.stringify(values);
     const original = button.innerHTML;
     button.disabled = true;
     button.textContent = 'Sending enquiry…';
@@ -162,8 +158,13 @@ document.querySelectorAll('.contact-form').forEach(form => {
         const names = response.status === 400
           ? fields.filter(field => Object.hasOwn(result?.fieldErrors || {}, field.name)) : [];
         names.forEach(field => setFieldError(field, messages[field.name]));
+<<<<<<< HEAD
         if (names.length) notify('Please check the highlighted fields.', 'error');
         else offerEmailFallback('Our form delivery service is temporarily unavailable. Your enquiry has not been confirmed.');
+=======
+        notify(names.length ? 'Please check the highlighted fields.' :
+          'Our enquiry service is temporarily unavailable. Your details are still here. Please try again later.', 'error');
+>>>>>>> aa121380a22126890a726815ea76a6f7c4c22044
         if (names.length) names[0].focus();
         return;
       }
@@ -172,7 +173,11 @@ document.querySelectorAll('.contact-form').forEach(form => {
       notify('Thank you. Your enquiry has been accepted for email delivery. We’ll be in touch to discuss your project.', 'success');
       status.focus();
     } catch {
+<<<<<<< HEAD
       offerEmailFallback('We couldn’t confirm your enquiry. Your details are still in the form.');
+=======
+      notify('We couldn’t confirm delivery of your enquiry. Your details are still here. Please try again later.', 'error');
+>>>>>>> aa121380a22126890a726815ea76a6f7c4c22044
     } finally {
       clearTimeout(timeout);
       button.disabled = false;
@@ -183,6 +188,30 @@ document.querySelectorAll('.contact-form').forEach(form => {
 });
 
 document.querySelectorAll('[data-year]').forEach(node => { node.textContent = new Date().getFullYear(); });
+// Keep the Home heading's gradient continuous while its letters animate separately.
+const heroHeading = document.querySelector('.hero .hero-title');
+if (heroHeading) {
+  const syncHeroGradient = () => {
+    const accent = heroHeading.querySelector('.title-accent');
+    if (!accent) return;
+    // offset measurements exclude the entrance animation's transforms.
+    const width = accent.clientWidth;
+    const height = accent.clientHeight;
+    const letters = [...accent.querySelectorAll('.title-letter')].map(letter => ({
+      letter, x: letter.offsetLeft, y: letter.offsetTop,
+    }));
+    accent.style.setProperty('--accent-width', `${width}px`);
+    accent.style.setProperty('--accent-height', `${height}px`);
+    letters.forEach(({letter, x, y}) => {
+      letter.style.setProperty('--accent-x', `${x}px`);
+      letter.style.setProperty('--accent-y', `${y}px`);
+    });
+  };
+  syncHeroGradient();
+  new ResizeObserver(syncHeroGradient).observe(heroHeading);
+  new MutationObserver(syncHeroGradient).observe(heroHeading, {childList: true, subtree: true});
+  document.fonts.ready.then(syncHeroGradient);
+}
 const motionPreference = window.matchMedia('(prefers-reduced-motion: reduce)');
 const observed = new WeakSet();
 const observer = 'IntersectionObserver' in window ? new IntersectionObserver(entries => entries.forEach(entry => {
