@@ -280,6 +280,39 @@
   },
   "portfolio": [
     {
+      "title": "Sinnar Mobile",
+      "category": "Retail website",
+      "shortDescription": "A website for Sinnar Mobile.",
+      "description": "A website for Sinnar Mobile.",
+      "technologies": [],
+      "concept": false,
+      "featured": true,
+      "imageUrl": "",
+      "projectUrl": "https://prashants-07.github.io/Sinnar-Mobile/"
+    },
+    {
+      "title": "Carewell Hospital Nashik",
+      "category": "Healthcare website",
+      "shortDescription": "A website for Carewell Hospital in Nashik.",
+      "description": "A website for Carewell Hospital in Nashik.",
+      "technologies": [],
+      "concept": false,
+      "featured": true,
+      "imageUrl": "",
+      "projectUrl": "https://carewellhospitalnashik.netlify.app/"
+    },
+    {
+      "title": "Aurelia Estates",
+      "category": "Real estate website",
+      "shortDescription": "A website for Aurelia Estates.",
+      "description": "A website for Aurelia Estates.",
+      "technologies": [],
+      "concept": false,
+      "featured": true,
+      "imageUrl": "",
+      "projectUrl": "https://clarigence-aurelia-estates.netlify.app/"
+    },
+    {
       "title": "Digital presence, reimagined.",
       "category": "Website concept",
       "shortDescription": "A service website exploration with clear navigation and a focused enquiry journey.",
