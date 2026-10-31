@@ -6,7 +6,7 @@ const content = require('../content.json');
   const browser = await chromium.launch({channel: 'chrome', headless: true});
   try {
     const page = await browser.newPage({reducedMotion: 'reduce'});
-    for (const width of [390, 1440]) {
+    for (const width of [390, 768, 1024, 1440]) {
       await page.setViewportSize({width, height: 900});
       await page.goto('http://localhost:8000/');
       await page.waitForSelector('.client-logo');
@@ -38,6 +38,17 @@ const content = require('../content.json');
       assert.equal(await page.locator('.project-image').count(), 4);
       assert.equal(await page.locator('.concept-preview').count(), 4);
       assert.equal(await page.locator('.project-symbol').count(), 0);
+      const cards = await page.locator('.work-card').evaluateAll(nodes => nodes.map(n => {
+        const box = n.getBoundingClientRect();
+        const art = n.querySelector('.project-art').getBoundingClientRect();
+        return {top: box.top, width: box.width, artWidth: art.width, artHeight: art.height};
+      }));
+      const columns = width > 1000 ? 3 : width > 600 ? 2 : 1;
+      assert.equal(cards.filter(card => Math.abs(card.top - cards[0].top) < 1).length, columns);
+      assert(cards.every(card => Math.abs(card.artWidth / card.artHeight - 16 / 9) < .02));
+      assert(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
+      await page.locator('.project-image,.concept-preview').evaluateAll(nodes => Promise.all(nodes.map(n => {n.loading = 'eager'; return n.decode();})));
+      await page.screenshot({path: `artifacts/qa/portfolio-compact-${width}.png`, fullPage: true});
       console.log(`${width}px: four client logos loaded; available links open correct websites in new tabs; portfolio images retained.`);
     }
   } finally {

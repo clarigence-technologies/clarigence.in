@@ -186,6 +186,19 @@ h1,h2,h3{font-family:var(--sans);letter-spacing:-.04em}
 .project-art:has(.project-image){display:block;height:auto;min-height:0;aspect-ratio:auto;padding:0;overflow:hidden;background:transparent}.project-art .project-image{display:block;width:100%;height:auto;max-width:100%;aspect-ratio:auto;object-fit:contain;border-radius:0}
 
 /* Client artwork stays uncropped and links directly to each client's website. */
+/* A compact, three-column gallery on the portfolio page. */
+.portfolio-section .work-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:24px}
+.portfolio-section .work-card{border-radius:18px}
+.portfolio-section .project-art,.portfolio-section .project-art:has(.project-image){display:block;height:auto;min-height:0;aspect-ratio:16/9;padding:0;overflow:hidden;background:#edf2fa}
+.portfolio-section .project-art .project-image,.portfolio-section .concept-preview{width:100%;height:100%;aspect-ratio:auto;object-fit:cover;object-position:top center}
+.portfolio-section .project-copy{padding:20px}
+.portfolio-section .project-copy h3{font-size:21px;line-height:1.3;margin-bottom:10px}
+.portfolio-section .project-copy p{font-size:14px;line-height:1.7}
+.portfolio-section .project-copy .eyebrow{font-size:9px;margin-bottom:10px}
+.portfolio-section .project-copy details{margin-top:14px;padding-top:8px}
+@media(max-width:1000px){.portfolio-section .work-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:20px}}
+@media(max-width:600px){.portfolio-section .work-grid{grid-template-columns:1fr;gap:20px}}
+
 .client-section[hidden]{display:none}
 .client-section{padding-block:40px 44px;border-block:1px solid #e8edf5;background:#fff}
 .clients-heading{text-align:center;margin-bottom:26px}
