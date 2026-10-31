@@ -182,5 +182,5 @@ h1,h2,h3{font-family:var(--sans);letter-spacing:-.04em}
 .social-links a{border-color:#adc8ff38;background:#ffffff0a}
 .social-links a:hover{background:var(--blue);--social-icon-background:var(--blue)}
 
-/* Keep portfolio artwork and its text fully visible on every screen size. */
-.project-art:has(.project-image){height:auto;aspect-ratio:16/10;background:#f2f6fc}.project-art .project-image{object-fit:contain}
+/* Let uploaded artwork set its own height without cropping or letterboxing. */
+.project-art:has(.project-image){display:block;height:auto;min-height:0;aspect-ratio:auto;padding:0;overflow:hidden;background:transparent}.project-art .project-image{display:block;width:100%;height:auto;max-width:100%;aspect-ratio:auto;object-fit:contain;border-radius:0}

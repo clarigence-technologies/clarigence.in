@@ -307,9 +307,9 @@
       "shortDescription": "A website for Aurelia Estates.",
       "description": "A website for Aurelia Estates.",
       "technologies": [],
-      "concept": true,
+      "concept": false,
       "featured": true,
-      "imageUrl": "assets/images/aurelia-estates.png",
+      "imageUrl": "assets/images/aurelia-estates-v2.png",
       "projectUrl": "https://clarigence-aurelia-estates.netlify.app/"
     },
     {
