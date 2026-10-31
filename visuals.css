@@ -184,3 +184,9 @@ h1,h2,h3{font-family:var(--sans);letter-spacing:-.04em}
 
 /* Let uploaded artwork set its own height without cropping or letterboxing. */
 .project-art:has(.project-image){display:block;height:auto;min-height:0;aspect-ratio:auto;padding:0;overflow:hidden;background:transparent}.project-art .project-image{display:block;width:100%;height:auto;max-width:100%;aspect-ratio:auto;object-fit:contain;border-radius:0}
+
+/* Compact category symbols for portfolio and featured project cards. */
+.project-art.project-symbol-art{display:flex;align-items:center;justify-content:flex-start;height:112px;min-height:0;aspect-ratio:auto;padding:24px 26px 0;background:transparent}
+.project-symbol-art .project-symbol{display:block;width:72px;height:72px;object-fit:contain;flex-shrink:0}
+.project-symbol-art .concept-badge{position:static;margin-left:16px;font-size:9px;color:#4565cf;background:#edf2ff;border-color:#e0e7fc}
+@media(max-width:600px){.project-art.project-symbol-art{height:96px;padding:20px 24px 0}.project-symbol-art .project-symbol{width:60px;height:60px}}
