@@ -287,7 +287,7 @@
       "technologies": [],
       "concept": false,
       "featured": true,
-      "imageUrl": "",
+      "imageUrl": "assets/images/sinnar-mobile.png",
       "projectUrl": "https://prashants-07.github.io/Sinnar-Mobile/"
     },
     {
@@ -298,7 +298,7 @@
       "technologies": [],
       "concept": false,
       "featured": true,
-      "imageUrl": "",
+      "imageUrl": "assets/images/carewell-hospital.png",
       "projectUrl": "https://carewellhospitalnashik.netlify.app/"
     },
     {
@@ -307,10 +307,21 @@
       "shortDescription": "A website for Aurelia Estates.",
       "description": "A website for Aurelia Estates.",
       "technologies": [],
-      "concept": false,
+      "concept": true,
       "featured": true,
-      "imageUrl": "",
+      "imageUrl": "assets/images/aurelia-estates.png",
       "projectUrl": "https://clarigence-aurelia-estates.netlify.app/"
+    },
+    {
+      "title": "Ledger Billing",
+      "category": "Billing application",
+      "shortDescription": "Billing and invoice management software for everyday business operations.",
+      "description": "Manage customers and products, generate invoices, track payments, and review reports and analytics.",
+      "technologies": [],
+      "concept": false,
+      "featured": false,
+      "imageUrl": "assets/images/ledger-billing.png",
+      "projectUrl": ""
     },
     {
       "title": "Digital presence, reimagined.",
