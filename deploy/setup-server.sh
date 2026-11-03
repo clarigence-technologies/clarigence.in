@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# One-time setup of a fresh Ubuntu 22.04/24.04 Hostinger VPS for clarigence.in.
+# One-time setup of a fresh Ubuntu (22.04 or newer) Hostinger VPS for clarigence.in.
+# deploy.sh (run at the end) installs the Nginx site and starts the containers.
 # Run as root:  bash setup-server.sh admin@yourdomain.com
 # Safe to run again; existing passwords and data are kept.
 set -euo pipefail
@@ -22,8 +23,12 @@ if ! command -v docker >/dev/null 2>&1; then
 fi
 systemctl enable --now docker
 
-if ! command -v node >/dev/null 2>&1 || [ "$(node -p 'process.versions.node.split(".")[0]')" -lt 20 ]; then
-  echo "==> Installing Node.js 20 (used to build the static pages)"
+if ! command -v node >/dev/null 2>&1; then
+  echo "==> Installing Node.js (used to build the static pages)"
+  apt-get install -y nodejs
+fi
+if [ "$(node -p 'process.versions.node.split(".")[0]')" -lt 18 ]; then
+  echo "==> Ubuntu's Node.js is too old; installing Node.js 20"
   curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
   apt-get install -y nodejs
 fi
@@ -60,13 +65,7 @@ if [ ! -f "$ENV_FILE" ]; then
   echo "    Admin login saved to /root/clarigence-admin-login.txt (readable by root only)."
 fi
 
-echo "==> Configuring Nginx"
-cp "$APP_DIR/deploy/nginx-clarigence.conf" /etc/nginx/sites-available/clarigence
-ln -sf /etc/nginx/sites-available/clarigence /etc/nginx/sites-enabled/clarigence
-rm -f /etc/nginx/sites-enabled/default
-nginx -t
 systemctl enable --now nginx
-systemctl reload nginx
 
 echo "==> Daily database backup (03:15, keeps 14 days in /var/backups/clarigence)"
 install -d -m 700 /var/backups/clarigence

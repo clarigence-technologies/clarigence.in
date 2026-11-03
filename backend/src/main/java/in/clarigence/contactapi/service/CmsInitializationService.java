@@ -21,22 +21,33 @@ public class CmsInitializationService {
     private final CmsService cms;
     private final ObjectMapper json;
     public CmsInitializationService(WebsiteServiceRepository services,PortfolioProjectRepository projects,ClientLogoRepository clientLogos,ClientService clients,SiteDocumentRepository documents,CmsService cms,ObjectMapper json){this.services=services;this.projects=projects;this.clientLogos=clientLogos;this.clients=clients;this.documents=documents;this.cms=cms;this.json=json;}
+    private static final String CONTENT_IMPORT_MIGRATION="content-import-v1";
+    private JsonNode seed() throws Exception {try(var stream=new ClassPathResource("cms-seed.json").getInputStream()){return json.readTree(stream);}}
     @Transactional public void initialize() throws Exception {
         if(!documents.existsById("cms-initialized")){
-            try(var stream=new ClassPathResource("cms-seed.json").getInputStream()){
-                JsonNode seed=json.readTree(stream);
-                if(services.count()==0){for(JsonNode item:seed.get("services"))cms.save("services",null,json.treeToValue(item,CmsItemRequest.class));}
-                // The seed mirrors the static content.json so a new database starts with the live site's content.
-                if(projects.count()==0&&seed.has("portfolio")){for(JsonNode item:seed.get("portfolio"))cms.save("portfolio",null,json.treeToValue(item,CmsItemRequest.class));}
-                if(clientLogos.count()==0&&seed.has("clients")){for(JsonNode item:seed.get("clients"))clients.save(null,json.treeToValue(item,ClientRequest.class));}
-                for(var entry:seed.get("documents").properties()){
-                    if(!documents.existsById(entry.getKey()))documents.save(new SiteDocument(entry.getKey(),json.writeValueAsString(entry.getValue())));
-                }
-                // Marker prevents resurrecting deliberately deleted services on future restarts.
-                documents.saveAndFlush(new SiteDocument("cms-initialized","{}"));
+            JsonNode seed=seed();
+            if(services.count()==0){for(JsonNode item:seed.get("services"))cms.save("services",null,json.treeToValue(item,CmsItemRequest.class));}
+            importPortfolioAndClients(seed);
+            for(var entry:seed.get("documents").properties()){
+                if(!documents.existsById(entry.getKey()))documents.save(new SiteDocument(entry.getKey(),json.writeValueAsString(entry.getValue())));
             }
+            // Markers prevent resurrecting deliberately deleted records on future restarts.
+            documents.saveAndFlush(new SiteDocument(CONTENT_IMPORT_MIGRATION,"{}"));
+            documents.saveAndFlush(new SiteDocument("cms-initialized","{}"));
         }
+        migrateContentImport();
         migrateLegacyBusinessEmail();
+    }
+    // The seed mirrors the static content.json, so the database starts with the live site's portfolio and clients.
+    private void importPortfolioAndClients(JsonNode seed) throws Exception {
+        if(projects.count()==0&&seed.has("portfolio")){for(JsonNode item:seed.get("portfolio"))cms.save("portfolio",null,json.treeToValue(item,CmsItemRequest.class));}
+        if(clientLogos.count()==0&&seed.has("clients")){for(JsonNode item:seed.get("clients"))clients.save(null,json.treeToValue(item,ClientRequest.class));}
+    }
+    /** Databases created before portfolio/client seeding receive the live content once; empty modules only. */
+    private void migrateContentImport() throws Exception {
+        if(documents.existsById(CONTENT_IMPORT_MIGRATION))return;
+        documents.saveAndFlush(new SiteDocument(CONTENT_IMPORT_MIGRATION,"{}"));
+        importPortfolioAndClients(seed());
     }
     private void migrateLegacyBusinessEmail() throws Exception {
         if(documents.existsById(BUSINESS_EMAIL_MIGRATION))return;

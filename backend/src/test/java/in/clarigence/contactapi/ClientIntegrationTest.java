@@ -41,6 +41,17 @@ class ClientIntegrationTest {
         initialization.initialize();assertEquals(8,projects.count());assertEquals(4,clients.count());
     }
 
+    @Test void existingDatabaseReceivesPortfolioAndClientsOnce() throws Exception {
+        // Simulates the earlier VPS database: initialized, services only, no import marker.
+        projects.deleteAll();clients.deleteAll();documents.deleteById("content-import-v1");
+        assertTrue(documents.existsById("cms-initialized"));
+        initialization.initialize();
+        assertEquals(8,projects.count());assertEquals(4,clients.count());assertEquals(10,services.count());
+        // Deliberate deletions afterwards are not undone by later restarts.
+        projects.deleteAll();clients.deleteAll();initialization.initialize();
+        assertEquals(0,projects.count());assertEquals(0,clients.count());
+    }
+
     @Test void adminRoutesRequireLogin() throws Exception {
         mvc.perform(get("/api/admin/clients")).andExpect(status().isUnauthorized());
         mvc.perform(post("/api/admin/clients").with(csrf()).contentType(MediaType.APPLICATION_JSON).content(json.writeValueAsString(client("Anonymous",true)))).andExpect(status().isUnauthorized());
