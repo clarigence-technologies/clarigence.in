@@ -40,11 +40,12 @@ Then run `bash /opt/clarigence/deploy/deploy.sh`.
 
 1. Test everything on `http://<VPS-IP>/` and `http://<VPS-IP>/admin`.
 2. At the DNS provider, point `A @` and `A www` (or `CNAME www` → `clarigence.in`) to the VPS IP and remove the Vercel records. Keep MX/email records unchanged.
-3. When `clarigence.in` resolves to the VPS, issue HTTPS certificates:
+3. When `clarigence.in` resolves to the VPS, issue HTTPS certificates (webroot method, renewed automatically by `certbot.timer`):
    ```bash
-   certbot --nginx -d clarigence.in -d www.clarigence.in --redirect -m you@example.com --agree-tos -n
+   certbot certonly --webroot -w /var/www/html -d clarigence.in -d www.clarigence.in \
+     -m you@example.com --agree-tos -n --deploy-hook "systemctl reload nginx"
    ```
-4. Set `SESSION_COOKIE_SECURE=true` in `deploy/.env` and run `deploy.sh`.
+4. Set `SESSION_COOKIE_SECURE=true` in `deploy/.env` and run `deploy.sh` (it switches Nginx to the HTTPS site).
 5. Once the VPS site is confirmed, disconnect the domain from Vercel and pause the Vercel project.
 
 ## Updating the site
