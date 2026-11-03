@@ -25,10 +25,12 @@ class CmsIntegrationTest {
     @Autowired WebsiteServiceRepository services;
     @Autowired PortfolioProjectRepository projects;
     @Autowired SiteDocumentRepository documents;
+    @Autowired ClientLogoRepository clientLogos;
     @Autowired CmsInitializationService initialization;
     @Autowired SiteContentService content;
 
-    @BeforeEach void resetCms() throws Exception {services.deleteAll();projects.deleteAll();documents.deleteAll();initialization.initialize();}
+    // Seeded projects and clients are covered by ClientIntegrationTest; these tests start from an empty portfolio.
+    @BeforeEach void resetCms() throws Exception {services.deleteAll();projects.deleteAll();clientLogos.deleteAll();documents.deleteAll();initialization.initialize();projects.deleteAll();clientLogos.deleteAll();}
     private Map<String,Object> item(String slug,boolean active){
         Map<String,Object> r=new LinkedHashMap<>();r.put("name","Verification content");r.put("slug",slug);r.put("shortDescription","A test record in the isolated database.");r.put("description","Useful content for testing the CMS without touching MySQL.");r.put("icon","window");r.put("imageUrl","");r.put("displayOrder",1);r.put("active",active);r.put("capabilities",List.of("Planning","Development"));r.put("benefits",List.of("Clear processes"));r.put("technologies",List.of("Java"));r.put("featured",true);r.put("concept",true);return r;
     }

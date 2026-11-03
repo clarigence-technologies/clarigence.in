@@ -78,3 +78,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible{ou
 
 .status-IN_PROGRESS { background: #e9efff; color: #294eb0; }
 .table-wrap { position: relative; }
+
+/* Client logos in the Clients CMS list */
+.cms-client-intro{display:flex;align-items:center;gap:16px;min-width:0}
+.cms-client-logo{width:96px;height:56px;flex:0 0 96px;object-fit:contain;padding:6px;border:1px solid var(--line);border-radius:8px;background:#fff}

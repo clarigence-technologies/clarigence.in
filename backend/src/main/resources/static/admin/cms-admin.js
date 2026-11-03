@@ -4,7 +4,7 @@
   const panel=el('section','cms-panel');panel.id='cms-workspace';panel.hidden=true;
   const footer=document.querySelector('.app-footer');footer.before(panel);
   const legacy=[document.querySelector('#overview'),document.querySelector('.stat-grid'),document.querySelector('#enquiries')];
-  const modules=[['services','Services'],['portfolio','Portfolio'],['home','Homepage'],['about','About'],['business','Site Settings'],['seo','SEO']];
+  const modules=[['services','Services'],['portfolio','Portfolio'],['clients','Clients'],['home','Homepage'],['about','About'],['business','Site Settings'],['seo','SEO']];
   let currentModule='',generation=0,documentGeneration=0,schemaPromise;
   const nav=document.querySelector('.side-nav');
   modules.forEach(([key,label])=>{const a=el('a','side-link',label);a.href=`#cms-${key}`;a.dataset.cms=key;nav.append(a);});
@@ -30,7 +30,9 @@
     panel.replaceChildren(el('p','eyebrow','WEBSITE CONTENT'),el('h1','',modules.find(m=>m[0]===key)?.[1]||'Content'));
     const message=el('p','form-message','Loading content…');message.setAttribute('role','status');message.setAttribute('aria-live','polite');panel.append(message);
     try{
-      if(key==='services'||key==='portfolio'){
+      if(key==='clients'){
+        const items=await apiRequest('/api/admin/clients');if(token!==generation)return;message.textContent='';renderClients(items,message);
+      }else if(key==='services'||key==='portfolio'){
         const items=await apiRequest(`/api/admin/cms/${key}`);if(token!==generation)return;message.textContent='';renderList(key,items,message);
       }else{
         schemaPromise ||= apiRequest('/api/admin/content/schema').catch(error=>{schemaPromise=null;throw error;});const schemas=await schemaPromise;if(token!==generation)return;
@@ -127,6 +129,58 @@
           payload.imageUrl=uploaded.imageUrl;form.elements.imageUrl.value=uploaded.imageUrl;photo.value='';
         }
         await apiRequest(`/api/admin/cms/${kind}${item?`/${item.id}`:''}`,{method:item?'PUT':'POST',body:JSON.stringify(payload)});await openModule(kind);status(panel.querySelector('.form-message'),'Content saved. Refresh the public page to see the change.','success');summary();}
+      catch(error){formFeedback(form,message,error);}
+      finally{save.disabled=false;save.textContent='Save';}
+    });
+  }
+  const logoSrc=url=>/^(https?:)?\/\//.test(url)||url.startsWith('/')?url:'/'+url;
+  function renderClients(items,message){
+    const toolbar=el('div','cms-toolbar');toolbar.append(button('Add client',()=>clientForm(null,message),'button primary-button'),el('p','','Client logos appear in the homepage "Our happy clients" section. Lower display order appears first.'));
+    panel.append(toolbar);
+    if(!items.length){panel.append(el('p','cms-empty','No clients yet. Add your first client logo.'));return;}
+    const list=el('div','cms-records');
+    items.forEach(item=>{
+      const row=el('article','cms-record');const intro=el('div','cms-client-intro');
+      const logo=el('img','cms-client-logo');logo.src=logoSrc(item.logoUrl);logo.alt='';logo.loading='lazy';
+      const text=el('div');text.append(el('h2','',item.name),el('p','',`${item.active?'Published':'Hidden'} · Order ${item.displayOrder}${item.websiteUrl?' · '+item.websiteUrl:''}`));intro.append(logo,text);
+      const actions=el('div','cms-row-actions');
+      actions.append(button('Edit',()=>clientForm(item,message)),button(item.active?'Hide':'Publish',async event=>{
+        const target=event.currentTarget;target.disabled=true;
+        try{await apiRequest(`/api/admin/clients/${item.id}`,{method:'PUT',body:JSON.stringify({...item,active:!item.active})});await openModule('clients');status(panel.querySelector('.form-message'),'Client updated.','success');}catch(e){status(message,e.message,'error');target.disabled=false;}
+      }),button('Delete',async event=>{
+        if(!window.confirm(`Delete client “${item.name}” permanently? You can hide it instead.`))return;
+        const target=event.currentTarget;target.disabled=true;
+        try{await apiRequest(`/api/admin/clients/${item.id}`,{method:'DELETE'});await openModule('clients');status(panel.querySelector('.form-message'),'Client deleted.','success');}catch(e){status(message,e.message,'error');target.disabled=false;}
+      },'button delete-button'));
+      row.append(intro,actions);list.append(row);
+    });panel.append(list);
+  }
+  function clientForm(item,message){
+    panel.querySelectorAll('.cms-toolbar,.cms-records,.cms-empty,.cms-editor').forEach(n=>n.remove());message.textContent='';
+    const form=el('form','cms-editor');form.append(el('h2','',`${item?'Edit':'Add'} client`),el('p','','Fields marked * are required. Upload a logo or enter an existing image path.'));
+    const definitions=[{name:'name',label:'Client name',max:120,required:true},{name:'logoUrl',label:'Logo URL/path',type:'image',max:2048},{name:'websiteUrl',label:'Client website (optional)',type:'url',max:2048},{name:'displayOrder',label:'Display order',type:'number',required:true},{name:'active',label:'Published',type:'boolean',required:true}];
+    definitions.forEach(def=>field(form,def,item?.[def.name]??({displayOrder:10,active:true}[def.name]??'')));
+    const wrap=el('div','cms-field');const label=el('label','','Upload logo');label.htmlFor='cms-photo';
+    const photo=el('input');photo.type='file';photo.id='cms-photo';photo.name='photo';photo.accept='image/png,image/jpeg,image/gif';
+    const error=el('span','cms-field-error');error.id='cms-photo-error';photo.setAttribute('aria-describedby','cms-photo-help cms-photo-error');
+    const help=el('small','','PNG, JPEG or GIF up to 5 MB. A transparent PNG looks best. It replaces the logo path when you save.');help.id='cms-photo-help';
+    photo.addEventListener('change',()=>{error.textContent='';photo.removeAttribute('aria-invalid');});
+    wrap.append(label,photo,help,error);form.elements.logoUrl.closest('.cms-field').before(wrap);
+    const actions=el('div','cms-form-actions');const save=el('button','button primary-button','Save');save.type='submit';actions.append(save,button('Cancel',()=>openModule('clients')));form.append(actions);panel.append(form);form.elements.name.focus();
+    form.addEventListener('submit',async event=>{
+      event.preventDefault();if(save.disabled||!form.reportValidity())return;save.disabled=true;save.textContent='Saving…';status(message,'Saving client…');
+      const payload={version:item?.version??null};
+      definitions.forEach(def=>{const input=form.elements.namedItem(def.name);payload[def.name]=def.type==='boolean'?input.value==='true':def.type==='number'?Number(input.value):input.value.trim();});
+      try{
+        const file=photo.files[0];
+        if(file){
+          if(file.size>5*1024*1024)throw Object.assign(new Error('Choose a logo up to 5 MB.'),{fieldErrors:{photo:'Choose a logo up to 5 MB.'}});
+          status(message,'Uploading logo…');const body=new FormData();body.append('file',file);
+          const uploaded=await apiRequest('/api/admin/cms/portfolio/images',{method:'POST',body});
+          payload.logoUrl=uploaded.imageUrl;form.elements.logoUrl.value=uploaded.imageUrl;photo.value='';
+        }
+        if(!payload.logoUrl)throw Object.assign(new Error('Upload a logo or enter a logo path.'),{fieldErrors:{photo:'Upload a logo or enter a logo path.'}});
+        await apiRequest(`/api/admin/clients${item?`/${item.id}`:''}`,{method:item?'PUT':'POST',body:JSON.stringify(payload)});await openModule('clients');status(panel.querySelector('.form-message'),'Client saved. Refresh the homepage to see the change.','success');}
       catch(error){formFeedback(form,message,error);}
       finally{save.disabled=false;save.textContent='Save';}
     });

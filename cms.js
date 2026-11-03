@@ -25,6 +25,7 @@
       if (service) return service;
     }
     if (path === '/api/portfolio') return content.portfolio;
+    if (path === '/api/clients') return content.clients || [];
     if (path.startsWith('/api/content/')) {
       const document = content.documents[path.slice('/api/content/'.length)];
       if (document) return document;
@@ -35,7 +36,8 @@
     const key = `api:${path}`;
     if (!requests.has(key)) requests.set(key, (async () => {
       const baseUrl = (window.CLARIGENCE_CONFIG.apiBaseUrl || '').replace(/\/$/, '');
-      if (!baseUrl) return staticApi(path);
+      // contentSource 'api' reads the same-origin backend (VPS); otherwise an empty base URL means static content.json.
+      if (!baseUrl && window.CLARIGENCE_CONFIG.contentSource !== 'api') return staticApi(path);
       const response = await fetch(`${baseUrl}${path}`, {
         headers: {Accept: 'application/json'}, credentials: 'omit', signal: AbortSignal.timeout(12000)
       });
@@ -276,11 +278,9 @@
   async function clients(){
     const section=document.querySelector('[data-clients-section]');if(!section)return;
     try{
-      const response=await fetch(window.CLARIGENCE_CONFIG.contentUrl,{headers:{Accept:'application/json'},credentials:'omit',signal:AbortSignal.timeout(12000)});
-      if(!response.ok)throw new Error('Content unavailable');
-      const data=await response.json();
+      const items=await api('/api/clients');
       const grid=section.querySelector('[data-clients]');
-      for(const client of data.clients||[]){
+      for(const client of Array.isArray(items)?items:[]){
         const href=safeUrl(client.websiteUrl,false,true);
         const logo=safeUrl(client.logoUrl,true);
         if(!client.name||!logo)continue;

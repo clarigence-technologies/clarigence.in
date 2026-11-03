@@ -92,7 +92,7 @@ public class AdminSecurityConfig {
                         .requestMatchers("/admin", "/admin/**", "/api/contact",
                                 "/api/admin/auth/csrf", "/api/admin/auth/login").permitAll()
                         .requestMatchers(HttpMethod.OPTIONS, "/api/**").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/services", "/api/services/**", "/api/portfolio", "/api/portfolio/**", "/api/content/*").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/services", "/api/services/**", "/api/portfolio", "/api/portfolio/**", "/api/content/*", "/api/clients").permitAll()
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         .anyRequest().denyAll())
                 .exceptionHandling(exceptions -> exceptions

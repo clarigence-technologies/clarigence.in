@@ -201,6 +201,166 @@
       "useCases": "Enquiry follow-up, customer onboarding and recurring operational tasks."
     }
   ],
+  "portfolio": [
+    {
+      "name": "Sinnar Mobile",
+      "slug": "sinnar-mobile",
+      "shortDescription": "A website for Sinnar Mobile.",
+      "description": "A website for Sinnar Mobile.",
+      "icon": "window",
+      "imageUrl": "assets/images/sinnar-mobile.png",
+      "displayOrder": 10,
+      "active": true,
+      "category": "Retail website",
+      "technologies": [],
+      "projectUrl": "https://clarigence-technologies.github.io/Sinnar-Mobile/",
+      "featured": true,
+      "concept": false
+    },
+    {
+      "name": "Carewell Hospital Nashik",
+      "slug": "carewell-hospital-nashik",
+      "shortDescription": "A website for Carewell Hospital in Nashik.",
+      "description": "A website for Carewell Hospital in Nashik.",
+      "icon": "window",
+      "imageUrl": "assets/images/carewell-hospital.png",
+      "displayOrder": 20,
+      "active": true,
+      "category": "Healthcare website",
+      "technologies": [],
+      "projectUrl": "https://carewellhospitalnashik.netlify.app/",
+      "featured": true,
+      "concept": false
+    },
+    {
+      "name": "Aurelia Estates",
+      "slug": "aurelia-estates",
+      "shortDescription": "A website for Aurelia Estates.",
+      "description": "A website for Aurelia Estates.",
+      "icon": "window",
+      "imageUrl": "assets/images/aurelia-estates-v2.png",
+      "displayOrder": 30,
+      "active": true,
+      "category": "Real estate website",
+      "technologies": [],
+      "projectUrl": "https://clarigence-aurelia-estates.netlify.app/",
+      "featured": true,
+      "concept": false
+    },
+    {
+      "name": "Ledger Billing",
+      "slug": "ledger-billing",
+      "shortDescription": "Billing and invoice management software for everyday business operations.",
+      "description": "Manage customers and products, generate invoices, track payments, and review reports and analytics.",
+      "icon": "window",
+      "imageUrl": "assets/images/ledger-billing.png",
+      "displayOrder": 40,
+      "active": true,
+      "category": "Billing application",
+      "technologies": [],
+      "projectUrl": "",
+      "featured": false,
+      "concept": false
+    },
+    {
+      "name": "Digital presence, reimagined.",
+      "slug": "digital-presence-reimagined",
+      "shortDescription": "A service website exploration with clear navigation and a focused enquiry journey.",
+      "description": "This illustrative design explores usability and visual direction. It is not a shipped client project or a live product.",
+      "icon": "window",
+      "imageUrl": "",
+      "displayOrder": 50,
+      "active": true,
+      "category": "Website concept",
+      "technologies": [
+        "HTML · CSS · JavaScript"
+      ],
+      "projectUrl": "",
+      "featured": true,
+      "concept": true
+    },
+    {
+      "name": "Shopping, made simpler.",
+      "slug": "shopping-made-simpler",
+      "shortDescription": "A storefront exploration organized around product discovery and a simple customer journey.",
+      "description": "This illustrative design explores usability and visual direction. It is not a shipped client project or a live product.",
+      "icon": "window",
+      "imageUrl": "",
+      "displayOrder": 60,
+      "active": true,
+      "category": "Commerce concept",
+      "technologies": [
+        "UI design · Responsive layout"
+      ],
+      "projectUrl": "",
+      "featured": true,
+      "concept": true
+    },
+    {
+      "name": "Workflows in sync.",
+      "slug": "workflows-in-sync",
+      "shortDescription": "An interface exploration connecting customer context, pipeline stages and follow-up tasks.",
+      "description": "This illustrative design explores usability and visual direction. It is not a shipped client project or a live product.",
+      "icon": "window",
+      "imageUrl": "",
+      "displayOrder": 70,
+      "active": true,
+      "category": "CRM concept",
+      "technologies": [
+        "CRM design · Workflow planning"
+      ],
+      "projectUrl": "",
+      "featured": false,
+      "concept": true
+    },
+    {
+      "name": "Ready for what’s next.",
+      "slug": "ready-for-what-s-next",
+      "shortDescription": "A visual exploration of a connected foundation for digital business tools.",
+      "description": "This illustrative design explores usability and visual direction. It is not a shipped client project or a live product.",
+      "icon": "window",
+      "imageUrl": "",
+      "displayOrder": 80,
+      "active": true,
+      "category": "Cloud concept",
+      "technologies": [
+        "Architecture concept · Integration planning"
+      ],
+      "projectUrl": "",
+      "featured": false,
+      "concept": true
+    }
+  ],
+  "clients": [
+    {
+      "name": "Sinnar Mobile",
+      "logoUrl": "assets/clients/sinnar-mobile.png",
+      "websiteUrl": "https://clarigence-technologies.github.io/Sinnar-Mobile/",
+      "displayOrder": 10,
+      "active": true
+    },
+    {
+      "name": "Carewell Hospital Nashik",
+      "logoUrl": "assets/clients/carewell-hospital.png",
+      "websiteUrl": "https://carewellhospitalnashik.netlify.app/",
+      "displayOrder": 20,
+      "active": true
+    },
+    {
+      "name": "Aurelia Estates",
+      "logoUrl": "assets/clients/aurelia-estates.png",
+      "websiteUrl": "https://clarigence-aurelia-estates.netlify.app/",
+      "displayOrder": 30,
+      "active": true
+    },
+    {
+      "name": "Ledger Billing",
+      "logoUrl": "assets/clients/ledger-billing.png",
+      "websiteUrl": "",
+      "displayOrder": 40,
+      "active": true
+    }
+  ],
   "documents": {
     "home": {
       "headline": "Grow Your\nBusiness With\nTechnology.",
@@ -229,7 +389,7 @@
       "phone": "",
       "showPhone": "false",
       "whatsapp": "918459179752",
-      "address": "India",
+      "address": "Nashik, India",
       "instagram": "https://www.instagram.com/clarigence.in/",
       "linkedin": "https://www.linkedin.com/company/clarigence-in/",
       "facebook": "",
