@@ -36,8 +36,16 @@ public class CmsInitializationService {
             documents.saveAndFlush(new SiteDocument("cms-initialized","{}"));
         }
         migrateContentImport();
+        migrateClientProjectLinks();
         migrateLegacyBusinessEmail();
     }
+    /** Connects existing client logos to the portfolio project with the same name, once. */
+    private void migrateClientProjectLinks(){
+        if(documents.existsById(CLIENT_LINK_MIGRATION))return;
+        documents.saveAndFlush(new SiteDocument(CLIENT_LINK_MIGRATION,"{}"));
+        clients.linkByProjectName();
+    }
+    private static final String CLIENT_LINK_MIGRATION="client-project-link-v1";
     // The seed mirrors the static content.json, so the database starts with the live site's portfolio and clients.
     private void importPortfolioAndClients(JsonNode seed) throws Exception {
         if(projects.count()==0&&seed.has("portfolio")){for(JsonNode item:seed.get("portfolio"))cms.save("portfolio",null,json.treeToValue(item,CmsItemRequest.class));}

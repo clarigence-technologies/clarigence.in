@@ -74,12 +74,9 @@ const content=JSON.parse(fs.readFileSync(path.join(root,'content.json'),'utf8'))
   // The homepage stays compact; the six-step process lives on About.
   await page.goto(origin+'/about');await page.waitForLoadState('networkidle');
   assert.equal(await page.locator('.process-grid article').count(),6);
-  // The homepage shows every project marked "Show on homepage" (featured); the section hides when none are.
+  // The homepage no longer shows featured work; project details live on Portfolio.
   await page.goto(origin+'/');await page.waitForLoadState('networkidle');
-  const homepageProjects=content.portfolio.filter(p=>p.featured&&p.active!==false).length;
-  assert.equal(await page.locator('.work-section .work-card').count(),homepageProjects);
-  assert.equal(await page.locator('.work-section').isVisible(),homepageProjects>0);
-  if(homepageProjects)assert.equal(await page.locator('.work-section [data-portfolio]').getAttribute('data-count'),String(homepageProjects));
+  assert.equal(await page.locator('.work-card,[data-portfolio]').count(),0);
   await page.goto(origin+'/portfolio');await page.waitForLoadState('networkidle');
   await page.locator('.project-copy summary').first().click();assert(await page.locator('.project-copy details').first().getAttribute('open')!==null);
   await page.emulateMedia({reducedMotion:'no-preference'});await page.goto(origin+'/');await page.waitForLoadState('networkidle');

@@ -184,16 +184,10 @@
     try {
       const items=await api('/api/portfolio');if(!Array.isArray(items))throw new Error('Invalid content');
       for(const container of containers){
-        // Homepage shows every project marked "Show on homepage" in the admin; the layout adapts to the count.
-        const homepage=container.dataset.featured==='true';
-        const selected=homepage?items.filter(p=>p.featured):items;
+        // Projects are shown on the Portfolio page only; the homepage shows client logos ("Our happy clients") instead.
+        const selected=items;
         container.replaceChildren();container.setAttribute('aria-busy','false');
-        if(!selected.length){
-          // A homepage teaser with nothing to show only adds length; the portfolio page keeps its message.
-          if(homepage){container.closest('section').hidden=true;continue;}
-          status(container,'No published projects to show yet. Let’s discuss what we could build for your business.','empty');continue;
-        }
-        if(homepage){container.dataset.count=String(selected.length);container.closest('section').hidden=false;}
+        if(!selected.length){status(container,'No published projects to show yet. Let’s discuss what we could build for your business.','empty');continue;}
         selected.forEach(project=>{
           const article=node('article','work-card');const art=node('div','project-art');
           if(project.imageUrl)art.append(image(project.imageUrl,project.title,'project-image'));
@@ -212,10 +206,7 @@
           copy.append(details);article.append(art,copy);container.append(article);
         });reveal(container);
       }
-    }catch{containers.forEach(container=>{
-      if(container.dataset.featured==='true')container.closest('section').hidden=true;
-      else status(container,'Portfolio is temporarily unavailable. Please check back later.');
-    });}
+    }catch{containers.forEach(container=>status(container,'Portfolio is temporarily unavailable. Please check back later.'));}
   }
   const text=(selector,value)=>{if(value!=null)document.querySelectorAll(selector).forEach(n=>{n.textContent=value;});};
   const multiline=(element,value)=>{

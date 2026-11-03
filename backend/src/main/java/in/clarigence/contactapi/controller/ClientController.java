@@ -5,6 +5,7 @@ import in.clarigence.contactapi.service.ClientService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
@@ -21,4 +22,9 @@ public class ClientController {
     @PutMapping("/api/admin/clients/{id}") public AdminClient update(@PathVariable @Min(1) Long id,@Valid @RequestBody ClientRequest request){return clients.save(id,request);}
     @DeleteMapping("/api/admin/clients/{id}") @ResponseStatus(HttpStatus.NO_CONTENT)
     public void delete(@PathVariable @Min(1) Long id){clients.delete(id);}
+    /** Portfolio project switch "Add to happy clients". Returns the linked logo, or 204 when none exists. */
+    @PutMapping("/api/admin/clients/project/{slug}")
+    public ResponseEntity<AdminClient> projectClient(@PathVariable String slug,@Valid @RequestBody ProjectClientRequest request){
+        return clients.setProjectClient(slug,request).map(ResponseEntity::ok).orElseGet(()->ResponseEntity.noContent().build());
+    }
 }

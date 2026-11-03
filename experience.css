@@ -379,18 +379,3 @@
   .visual-refresh .footer-grid>.footer-column:last-child>p{padding-left:16px;border-left:1px solid #ffffff33;min-height:20px}
   .xp-footer-mark{font-size:clamp(46px,16vw,72px)}
 }
-
-/* Homepage featured work: every project marked "Show on homepage", laid out by count.
-   1 = centred single card, 2 and 4 = two per row, 3/5/6+ = three per row with the last row centred. */
-.visual-refresh .work-section .work-grid[data-portfolio]{display:flex;flex-wrap:wrap;justify-content:center;gap:24px}
-.visual-refresh .work-section .work-grid[data-portfolio]>.work-card{flex:0 1 calc((100% - 48px)/3);min-width:0}
-.visual-refresh .work-section .work-grid[data-count="1"]>.work-card{flex-basis:min(560px,100%)}
-.visual-refresh .work-section .work-grid[data-count="2"]>.work-card,.visual-refresh .work-section .work-grid[data-count="4"]>.work-card{flex-basis:calc((100% - 24px)/2);max-width:560px}
-@media(max-width:1000px){
-  .visual-refresh .work-section .work-grid[data-portfolio]{gap:20px}
-  .visual-refresh .work-section .work-grid[data-portfolio]>.work-card{flex-basis:calc((100% - 20px)/2)}
-  .visual-refresh .work-section .work-grid[data-count="1"]>.work-card{flex-basis:min(560px,100%)}
-}
-@media(max-width:600px){
-  .visual-refresh .work-section .work-grid[data-portfolio]>.work-card,.visual-refresh .work-section .work-grid[data-count]>.work-card{flex-basis:100%;max-width:none}
-}

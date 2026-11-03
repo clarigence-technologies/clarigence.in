@@ -52,6 +52,31 @@ class ClientIntegrationTest {
         assertEquals(0,projects.count());assertEquals(0,clients.count());
     }
 
+    @Test @WithMockUser(roles="ADMIN") void projectSwitchControlsHappyClients() throws Exception {
+        // Seeded logos are linked to the portfolio project with the same name.
+        assertEquals("sinnar-mobile",clients.findByProjectSlug("sinnar-mobile").orElseThrow().getProjectSlug());
+        assertEquals(4,clients.findAll().stream().filter(c->c.getProjectSlug()!=null).count());
+        String slug="digital-presence-reimagined",path="/api/admin/clients/project/"+slug;
+        // A logo is required the first time.
+        mvc.perform(put(path).with(csrf()).contentType(MediaType.APPLICATION_JSON).content("{\"show\":true}")).andExpect(status().isBadRequest()).andExpect(jsonPath("$.fieldErrors.clientLogoUrl").exists());
+        mvc.perform(put(path).with(csrf()).contentType(MediaType.APPLICATION_JSON).content("{\"show\":true,\"logoUrl\":\"/api/portfolio/images/logo.png\"}"))
+            .andExpect(status().isOk()).andExpect(jsonPath("$.name").value("Digital presence, reimagined.")).andExpect(jsonPath("$.projectSlug").value(slug));
+        mvc.perform(get("/api/clients")).andExpect(jsonPath("$.length()").value(5));
+        // Switching off hides the logo but keeps it; switching on again needs no new upload.
+        mvc.perform(put(path).with(csrf()).contentType(MediaType.APPLICATION_JSON).content("{\"show\":false}")).andExpect(status().isOk()).andExpect(jsonPath("$.active").value(false));
+        mvc.perform(get("/api/clients")).andExpect(jsonPath("$.length()").value(4));
+        mvc.perform(put(path).with(csrf()).contentType(MediaType.APPLICATION_JSON).content("{\"show\":true}")).andExpect(status().isOk()).andExpect(jsonPath("$.logoUrl").value("/api/portfolio/images/logo.png"));
+        // A draft (unpublished) project keeps its logo hidden.
+        var project=projects.findBySlug(slug).orElseThrow();project.setActive(false);projects.saveAndFlush(project);
+        mvc.perform(get("/api/clients")).andExpect(jsonPath("$.length()").value(4));
+        // Deleting the project removes its logo.
+        mvc.perform(delete("/api/admin/cms/portfolio/"+project.getId()).with(csrf())).andExpect(status().isNoContent());
+        assertTrue(clients.findByProjectSlug(slug).isEmpty());
+        // Switching off a project without a logo does nothing; unknown projects are rejected.
+        mvc.perform(put("/api/admin/clients/project/shopping-made-simpler").with(csrf()).contentType(MediaType.APPLICATION_JSON).content("{\"show\":false}")).andExpect(status().isNoContent());
+        mvc.perform(put("/api/admin/clients/project/no-such-project").with(csrf()).contentType(MediaType.APPLICATION_JSON).content("{\"show\":true}")).andExpect(status().isNotFound());
+    }
+
     @Test void adminRoutesRequireLogin() throws Exception {
         mvc.perform(get("/api/admin/clients")).andExpect(status().isUnauthorized());
         mvc.perform(post("/api/admin/clients").with(csrf()).contentType(MediaType.APPLICATION_JSON).content(json.writeValueAsString(client("Anonymous",true)))).andExpect(status().isUnauthorized());

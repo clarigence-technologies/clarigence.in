@@ -13,7 +13,8 @@ import java.util.Objects;
 public class CmsService {
     private final WebsiteServiceRepository services;
     private final PortfolioProjectRepository projects;
-    public CmsService(WebsiteServiceRepository services,PortfolioProjectRepository projects){this.services=services;this.projects=projects;}
+    private final ClientLogoRepository clientLogos;
+    public CmsService(WebsiteServiceRepository services,PortfolioProjectRepository projects,ClientLogoRepository clientLogos){this.services=services;this.projects=projects;this.clientLogos=clientLogos;}
     public List<ServiceSummary> publicServices(){return services.findByActiveTrueOrderByDisplayOrderAscIdAsc().stream().map(ServiceSummary::from).toList();}
     public PublicService publicService(String slug){return PublicService.from(services.findBySlugAndActiveTrue(slug).orElseThrow(()->new ResourceNotFoundException("Service not found.")));}
     public List<PublicProject> publicProjects(){return projects.findByActiveTrueOrderByDisplayOrderAscIdAsc().stream().map(PublicProject::from).toList();}
@@ -46,7 +47,11 @@ public class CmsService {
         }
         return AdminCmsItem.from(item);
     }
-    @Transactional public void delete(String kind,Long id){CmsItem item=find(kind,id);if(item instanceof WebsiteService s)services.delete(s);else projects.delete((PortfolioProject)item);}
+    @Transactional public void delete(String kind,Long id){
+        CmsItem item=find(kind,id);
+        if(item instanceof WebsiteService s)services.delete(s);
+        else{clientLogos.findByProjectSlug(item.getSlug()).ifPresent(clientLogos::delete);projects.delete((PortfolioProject)item);}
+    }
     private String clean(String text){return text==null||text.isBlank()?null:text.trim();}
     private List<String> list(List<String> values){return values==null?List.of():values.stream().map(String::trim).toList();}
 }

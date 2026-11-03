@@ -7,6 +7,7 @@ public interface PortfolioProjectRepository extends JpaRepository<PortfolioProje
     List<PortfolioProject> findAllByOrderByDisplayOrderAscIdAsc();
     List<PortfolioProject> findByActiveTrueOrderByDisplayOrderAscIdAsc();
     Optional<PortfolioProject> findBySlugAndActiveTrue(String slug);
+    Optional<PortfolioProject> findBySlug(String slug);
     boolean existsBySlug(String slug);
     boolean existsBySlugAndIdNot(String slug,Long id);
     long countByActiveTrue();

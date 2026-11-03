@@ -12,6 +12,8 @@ public class ClientLogo {
     @Column(nullable=false, length=120) private String name;
     @Column(nullable=false, length=2048) private String logoUrl;
     @Column(length=2048) private String websiteUrl;
+    /** Portfolio project this logo belongs to (managed from the project's "Add to happy clients" switch). */
+    @Column(length=120, unique=true) private String projectSlug;
     @Column(nullable=false) private int displayOrder;
     @Column(nullable=false) private boolean active;
     @Column(nullable=false, updatable=false) private Instant createdAt;
@@ -27,6 +29,8 @@ public class ClientLogo {
     public void setLogoUrl(String value){logoUrl=value;}
     public String getWebsiteUrl(){return websiteUrl;}
     public void setWebsiteUrl(String value){websiteUrl=value;}
+    public String getProjectSlug(){return projectSlug;}
+    public void setProjectSlug(String value){projectSlug=value;}
     public int getDisplayOrder(){return displayOrder;}
     public void setDisplayOrder(int value){displayOrder=value;}
     public boolean isActive(){return active;}
