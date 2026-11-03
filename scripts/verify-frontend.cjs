@@ -74,9 +74,11 @@ const content=JSON.parse(fs.readFileSync(path.join(root,'content.json'),'utf8'))
   // The homepage stays compact; the six-step process lives on About.
   await page.goto(origin+'/about');await page.waitForLoadState('networkidle');
   assert.equal(await page.locator('.process-grid article').count(),6);
+  // The homepage no longer shows featured work; project details live on Portfolio.
   await page.goto(origin+'/');await page.waitForLoadState('networkidle');
+  assert.equal(await page.locator('.work-card,[data-portfolio]').count(),0);
+  await page.goto(origin+'/portfolio');await page.waitForLoadState('networkidle');
   await page.locator('.project-copy summary').first().click();assert(await page.locator('.project-copy details').first().getAttribute('open')!==null);
-  assert.equal(await page.locator('.concept-badge').count(),content.portfolio.filter(p=>p.featured).slice(0,2).filter(p=>p.concept).length);
   await page.emulateMedia({reducedMotion:'no-preference'});await page.goto(origin+'/');await page.waitForLoadState('networkidle');
   assert((await page.locator('.hero-visual').evaluate(n=>getComputedStyle(n).animationName)).match(/artwork-arrive|xp-rise/));
   await page.emulateMedia({reducedMotion:'reduce'});assert.equal(await page.locator('.hero-visual').evaluate(n=>getComputedStyle(n).animationName),'none');await page.waitForFunction(()=>!document.querySelector('.reveal-pending'),null,{timeout:2000});

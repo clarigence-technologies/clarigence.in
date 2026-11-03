@@ -351,3 +351,31 @@
   .visual-refresh .site-header.is-hidden{transform:none}
   .xp-ticker-viewport{overflow-x:auto}
 }
+
+/* Services dropdown icons reuse the homepage service-card gradients. */
+.visual-refresh .services-menu-grid .service-menu-link .service-menu-icon{--menu-gradient:linear-gradient(135deg,#3483ff,#1254e8);background:var(--menu-gradient);color:#fff;border-radius:10px;box-shadow:0 6px 14px -6px #243fc480;transition:transform .3s var(--xp-ease)}
+.visual-refresh .services-menu-grid .service-menu-link:nth-child(4n+2) .service-menu-icon{--menu-gradient:linear-gradient(135deg,#a34ced,#6932dd)}
+.visual-refresh .services-menu-grid .service-menu-link:nth-child(4n+3) .service-menu-icon{--menu-gradient:linear-gradient(135deg,#00a8b4,#007e8a)}
+.visual-refresh .services-menu-grid .service-menu-link:nth-child(4n+4) .service-menu-icon{--menu-gradient:linear-gradient(135deg,#ed5587,#b52b65)}
+.visual-refresh .services-menu-grid .service-menu-link:hover .service-menu-icon,.visual-refresh .services-menu-grid .service-menu-link:focus-visible .service-menu-icon{transform:rotate(-6deg) scale(1.06)}
+
+/* Compact footer: balanced link columns, a smaller wordmark and location beside the email. */
+.visual-refresh .site-footer{padding-top:40px}
+.visual-refresh .footer-grid{padding-bottom:26px}
+.visual-refresh .footer-column h3{margin-bottom:10px}
+.visual-refresh .footer-bottom{padding-block:16px}
+.xp-footer-mark{font-size:clamp(46px,8vw,112px);margin-top:0}
+@media(min-width:1101px){
+  .visual-refresh .footer-grid{grid-template-columns:1.15fr .55fr 1.5fr .95fr;gap:40px}
+  .visual-refresh .footer-services{display:grid;grid-template-columns:1fr 1fr;grid-template-rows:auto repeat(5,auto);grid-auto-flow:column;column-gap:28px;align-content:start}
+  .visual-refresh .footer-services h3{grid-column:1/-1;grid-row:1}
+}
+@media(max-width:600px){
+  .visual-refresh .footer-grid>.footer-column:nth-child(3){display:grid;grid-template-columns:1fr 1fr;grid-template-rows:auto repeat(3,auto);grid-auto-flow:column;column-gap:16px;grid-column:1/-1}
+  .visual-refresh .footer-grid>.footer-column:nth-child(3) h3{grid-column:1/-1;grid-row:1}
+  .visual-refresh .footer-grid>.footer-column:last-child{display:grid;grid-template-columns:auto 1fr;align-items:center;column-gap:16px}
+  .visual-refresh .footer-grid>.footer-column:last-child h3,.visual-refresh .footer-grid>.footer-column:last-child .button{grid-column:1/-1;justify-self:start}
+  .visual-refresh .footer-grid>.footer-column:last-child>a:not(.button),.visual-refresh .footer-grid>.footer-column:last-child>p{display:flex;align-items:center;min-height:32px;padding-block:0;margin:0;line-height:1.4}
+  .visual-refresh .footer-grid>.footer-column:last-child>p{padding-left:16px;border-left:1px solid #ffffff33;min-height:20px}
+  .xp-footer-mark{font-size:clamp(46px,16vw,72px)}
+}
