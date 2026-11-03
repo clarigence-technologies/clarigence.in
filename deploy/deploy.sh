@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
 # Pull the latest code from GitHub, rebuild the website and restart the backend.
 # Run as root on the VPS:  bash /opt/clarigence/deploy/deploy.sh
+# Everything is built and tested first; the live site only changes once all builds succeed.
 set -euo pipefail
+export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 
 APP_DIR=/opt/clarigence
 WEB_ROOT=/var/www/clarigence/public
@@ -11,8 +13,19 @@ echo "==> Updating code"
 git fetch --quiet origin main
 git reset --hard --quiet origin/main
 
+# Add settings introduced in newer versions of .env.example without touching existing values.
+while IFS= read -r line; do
+  key="${line%%=*}"
+  case "$line" in [A-Z]*=*) grep -q "^$key=" deploy/.env || echo "$line" >> deploy/.env ;; esac
+done < deploy/.env.example
+
 echo "==> Building website"
 node scripts/build-static.js
+
+echo "==> Building backend (runs the backend tests)"
+(cd deploy && docker compose --env-file .env build backend)
+
+echo "==> Publishing website"
 mkdir -p "$WEB_ROOT"
 rsync -a --delete dist/ "$WEB_ROOT/"
 # On the VPS the website reads content from the database through the backend.
@@ -27,15 +40,9 @@ rm -f /etc/nginx/sites-enabled/default
 nginx -t
 systemctl reload nginx
 
-# Add settings introduced in newer versions of .env.example without touching existing values.
-while IFS= read -r line; do
-  key="${line%%=*}"
-  case "$line" in [A-Z]*=*) grep -q "^$key=" deploy/.env || echo "$line" >> deploy/.env ;; esac
-done < deploy/.env.example
-
-echo "==> Building and starting backend + database"
+echo "==> Starting backend + database"
 cd deploy
-docker compose --env-file .env up -d --build
+docker compose --env-file .env up -d
 
 echo "==> Waiting for the backend"
 for attempt in $(seq 1 60); do

@@ -50,11 +50,13 @@ Then run `bash /opt/clarigence/deploy/deploy.sh`.
 
 ## Updating the site
 
-Commit and push to `main` on GitHub (for example from VS Code). The VPS checks GitHub every 2 minutes and deploys new commits automatically (`deploy/auto-deploy.sh`, cron file `/etc/cron.d/clarigence-auto-deploy`). A deploy that includes backend changes takes about 2–3 minutes because the backend tests run during the build; if a deploy fails, the previous version keeps running.
+Commit **and push** to `main` on GitHub. In VS Code: Source Control → **Commit**, then **Sync Changes** (or **Push**); a commit that is not pushed stays on your computer. The VPS checks GitHub every 2 minutes and deploys new commits automatically (`deploy/auto-deploy.sh`, cron file `/etc/cron.d/clarigence-auto-deploy`), so the live site updates about 2–5 minutes after a push. The website and backend are built and tested before anything goes live; if a build or test fails, the live site stays on the previous version and the next push is tried again.
 
 ```bash
-tail -f /var/log/clarigence-deploy.log      # watch automatic deploys
+tail -n 30 /var/log/clarigence-deploy.log    # recent automatic deploys (success or FAILED)
+cat /var/lib/clarigence/last-deployed        # commit currently live
 bash /opt/clarigence/deploy/deploy.sh        # deploy immediately by hand
+rm /etc/cron.d/clarigence-auto-deploy        # turn automatic deploys off
 ```
 
 Content managed in the admin panel (services, portfolio, clients, page text, SEO) is stored in the database and is never overwritten by a deploy.

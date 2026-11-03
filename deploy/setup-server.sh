@@ -74,7 +74,11 @@ cat > /etc/cron.d/clarigence-backup <<'CRON'
 CRON
 
 echo "==> Automatic deploy: checks GitHub main every 2 minutes (log: /var/log/clarigence-deploy.log)"
+# The deploy run at the end of this script covers the current commit, so cron starts from the next push.
+mkdir -p /var/lib/clarigence
+git -C "$APP_DIR" rev-parse HEAD | tee /var/lib/clarigence/last-attempted > /var/lib/clarigence/last-deployed
 cat > /etc/cron.d/clarigence-auto-deploy <<'CRON'
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 */2 * * * * root bash /opt/clarigence/deploy/auto-deploy.sh >> /var/log/clarigence-deploy.log 2>&1
 CRON
 cat > /etc/logrotate.d/clarigence-deploy <<'ROTATE'
@@ -88,8 +92,6 @@ cat > /etc/logrotate.d/clarigence-deploy <<'ROTATE'
 ROTATE
 
 bash "$APP_DIR/deploy/deploy.sh"
-mkdir -p /var/lib/clarigence
-git -C "$APP_DIR" rev-parse HEAD | tee /var/lib/clarigence/last-attempted > /var/lib/clarigence/last-deployed
 
 echo
 echo "Setup complete. Test the site at http://$(curl -fsS -4 https://ifconfig.me 2>/dev/null || hostname -I | awk '{print $1}')/"
