@@ -73,7 +73,23 @@ cat > /etc/cron.d/clarigence-backup <<'CRON'
 15 3 * * * root cd /opt/clarigence/deploy && docker compose exec -T database sh -c 'mysqldump -u root -p"$MYSQL_ROOT_PASSWORD" --single-transaction clarigence' | gzip > /var/backups/clarigence/clarigence-$(date +\%F).sql.gz && find /var/backups/clarigence -name '*.sql.gz' -mtime +14 -delete
 CRON
 
+echo "==> Automatic deploy: checks GitHub main every 2 minutes (log: /var/log/clarigence-deploy.log)"
+cat > /etc/cron.d/clarigence-auto-deploy <<'CRON'
+*/2 * * * * root bash /opt/clarigence/deploy/auto-deploy.sh >> /var/log/clarigence-deploy.log 2>&1
+CRON
+cat > /etc/logrotate.d/clarigence-deploy <<'ROTATE'
+/var/log/clarigence-deploy.log {
+  weekly
+  rotate 8
+  compress
+  missingok
+  notifempty
+}
+ROTATE
+
 bash "$APP_DIR/deploy/deploy.sh"
+mkdir -p /var/lib/clarigence
+git -C "$APP_DIR" rev-parse HEAD | tee /var/lib/clarigence/last-attempted > /var/lib/clarigence/last-deployed
 
 echo
 echo "Setup complete. Test the site at http://$(curl -fsS -4 https://ifconfig.me 2>/dev/null || hostname -I | awk '{print $1}')/"

@@ -50,11 +50,14 @@ Then run `bash /opt/clarigence/deploy/deploy.sh`.
 
 ## Updating the site
 
-Push to `main` on GitHub, then on the VPS:
+Commit and push to `main` on GitHub (for example from VS Code). The VPS checks GitHub every 2 minutes and deploys new commits automatically (`deploy/auto-deploy.sh`, cron file `/etc/cron.d/clarigence-auto-deploy`). A deploy that includes backend changes takes about 2–3 minutes because the backend tests run during the build; if a deploy fails, the previous version keeps running.
 
 ```bash
-bash /opt/clarigence/deploy/deploy.sh
+tail -f /var/log/clarigence-deploy.log      # watch automatic deploys
+bash /opt/clarigence/deploy/deploy.sh        # deploy immediately by hand
 ```
+
+Content managed in the admin panel (services, portfolio, clients, page text, SEO) is stored in the database and is never overwritten by a deploy.
 
 ## Useful commands
 

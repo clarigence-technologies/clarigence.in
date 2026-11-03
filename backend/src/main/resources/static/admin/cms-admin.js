@@ -48,12 +48,12 @@
     }catch(error){if(token===generation)status(message,error.message,'error');}
   }
   function renderList(kind,items,message){
-    const toolbar=el('div','cms-toolbar');toolbar.append(button(`Add ${kind==='services'?'service':'project'}`,()=>itemForm(kind,null,message),'button primary-button'),el('p','','Lower display order appears first. Disable/unpublish to hide a record without deleting it.'));
+    const toolbar=el('div','cms-toolbar');toolbar.append(button(`Add ${kind==='services'?'service':'project'}`,()=>itemForm(kind,null,message),'button primary-button'),el('p','',kind==='portfolio'?'Lower display order appears first. Use “Show on homepage” to choose which published projects appear on the homepage; all published projects appear on the Portfolio page.':'Lower display order appears first. Disable/unpublish to hide a record without deleting it.'));
     panel.append(toolbar);
     if(!items.length){panel.append(el('p','cms-empty','No records yet. Add your first project or service.'));return;}
     const list=el('div','cms-records');
     items.forEach(item=>{
-      const row=el('article','cms-record');const intro=el('div');intro.append(el('h2','',item.name),el('p','',`${item.active?'Published':'Draft / inactive'} · Order ${item.displayOrder} · ${item.slug}${item.featured?' · Featured':''}${item.concept&&kind==='portfolio'?' · Demo/concept':''}`));
+      const row=el('article','cms-record');const intro=el('div');intro.append(el('h2','',item.name),el('p','',`${item.active?'Published':'Draft / inactive'} · Order ${item.displayOrder} · ${item.slug}${kind==='portfolio'?(item.featured?' · On homepage':' · Portfolio only'):''}${item.concept&&kind==='portfolio'?' · Demo/concept':''}`));
       const actions=el('div','cms-row-actions');
       actions.append(button('Edit',async event=>{
         const target=event.currentTarget;target.disabled=true;const token=++generation;
@@ -63,7 +63,10 @@
           if(token===generation)itemForm(kind,saved,message);
         }catch(error){if(token===generation)status(message,error.message,'error');}
         finally{target.disabled=false;}
-      }),button(item.active?'Deactivate':'Publish',async event=>{
+      }),...(kind==='portfolio'?[button(item.featured?'Remove from homepage':'Show on homepage',async event=>{
+        const target=event.currentTarget;target.disabled=true;
+        try{await apiRequest(`/api/admin/cms/portfolio/${item.id}`,{method:'PUT',body:JSON.stringify({...item,featured:!item.featured})});await openModule(kind);status(panel.querySelector('.form-message'),item.featured?'Project removed from the homepage. It stays on the Portfolio page.':'Project will now show on the homepage'+(item.active?'.':' once it is published.'),'success');}catch(e){status(message,e.message,'error');target.disabled=false;}
+      })]:[]),button(item.active?'Deactivate':'Publish',async event=>{
         const target=event.currentTarget;target.disabled=true;
         try{await apiRequest(`/api/admin/cms/${kind}/${item.id}`,{method:'PUT',body:JSON.stringify({...item,active:!item.active})});await openModule(kind);status(panel.querySelector('.form-message'),'Publication status updated.','success');summary();}catch(e){status(message,e.message,'error');target.disabled=false;}
       }),button('Delete',async event=>{
@@ -103,7 +106,7 @@
     const form=el('form','cms-editor');form.append(el('h2','',`${item?'Edit':'Add'} ${kind==='services'?'service':'project'}`),el('p','','Fields marked * are required. Content is plain text, not HTML.'));
     const definitions=[{name:'name',label:kind==='services'?'Service name':'Project title',max:120,required:true},{name:'slug',label:'Stable internal slug',max:120,required:true},{name:'shortDescription',label:'Short description',type:'textarea',max:600,required:true},{name:'description',label:'Full description',type:'textarea',max:12000,required:true},{name:'icon',label:'Icon',type:'icon',required:true},{name:'imageUrl',label:'Image URL/path (optional)',type:'image',max:2048},{name:'displayOrder',label:'Display order',type:'number',required:true},{name:'active',label:kind==='services'?'Active / visible':'Published',type:'boolean',required:true}];
     if(kind==='services')definitions.push({name:'capabilities',label:'Key capabilities',type:'list',max:6000},{name:'benefits',label:'Business benefits',type:'list',max:6000},{name:'useCases',label:'Typical use cases',type:'textarea',max:2000});
-    else definitions.push({name:'category',label:'Category',max:120},{name:'technologies',label:'Technologies',type:'list',max:2400},{name:'projectUrl',label:'Project URL (optional)',type:'url',max:2048},{name:'featured',label:'Featured on homepage',type:'boolean'},{name:'concept',label:'Clearly label as demo / concept',type:'boolean'});
+    else definitions.push({name:'category',label:'Category',max:120},{name:'technologies',label:'Technologies',type:'list',max:2400},{name:'projectUrl',label:'Project URL (optional)',type:'url',max:2048},{name:'featured',label:'Show on homepage',type:'boolean'},{name:'concept',label:'Clearly label as demo / concept',type:'boolean'});
     definitions.forEach(def=>field(form,def,item?.[def.name]??({displayOrder:10,active:false,featured:false,concept:true,icon:'window'}[def.name]??'')));
     if(kind==='portfolio'){
       const wrap=el('div','cms-field');const label=el('label','','Upload photo (optional)');label.htmlFor='cms-photo';
@@ -113,6 +116,7 @@
       photo.addEventListener('change',()=>{error.textContent='';photo.removeAttribute('aria-invalid');});
       wrap.append(label,photo,help,error);form.elements.imageUrl.closest('.cms-field').before(wrap);
     }
+    if(kind==='portfolio')form.elements.featured.closest('.cms-field').append(el('small','','Yes: shown on the homepage and the Portfolio page. No: Portfolio page only. The homepage layout adjusts to the number of projects.'));
     if(item)form.elements.slug.readOnly=true;
     else{let edited=false;form.elements.slug.addEventListener('input',()=>edited=true);form.elements.name.addEventListener('input',()=>{if(!edited)form.elements.slug.value=form.elements.name.value.toLowerCase().normalize('NFKD').replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');});}
     const actions=el('div','cms-form-actions');const save=el('button','button primary-button','Save');save.type='submit';actions.append(save,button('Cancel',()=>openModule(kind)));form.append(actions);panel.append(form);form.elements.name.focus();

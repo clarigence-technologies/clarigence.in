@@ -184,13 +184,16 @@
     try {
       const items=await api('/api/portfolio');if(!Array.isArray(items))throw new Error('Invalid content');
       for(const container of containers){
-        const selected=container.dataset.featured==='true'?items.filter(p=>p.featured).slice(0,2):items;
+        // Homepage shows every project marked "Show on homepage" in the admin; the layout adapts to the count.
+        const homepage=container.dataset.featured==='true';
+        const selected=homepage?items.filter(p=>p.featured):items;
         container.replaceChildren();container.setAttribute('aria-busy','false');
         if(!selected.length){
           // A homepage teaser with nothing to show only adds length; the portfolio page keeps its message.
-          if(container.dataset.featured==='true'){container.closest('section').hidden=true;continue;}
+          if(homepage){container.closest('section').hidden=true;continue;}
           status(container,'No published projects to show yet. Let’s discuss what we could build for your business.','empty');continue;
         }
+        if(homepage){container.dataset.count=String(selected.length);container.closest('section').hidden=false;}
         selected.forEach(project=>{
           const article=node('article','work-card');const art=node('div','project-art');
           if(project.imageUrl)art.append(image(project.imageUrl,project.title,'project-image'));
