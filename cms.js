@@ -199,11 +199,14 @@
           if(project.concept)art.append(node('span','concept-badge','DEMO / CONCEPT'));
           const copy=node('div','project-copy');copy.append(node('p','eyebrow',project.category||'Project'),node('h3','',project.title),node('p','',project.shortDescription));
           if(project.technologies?.length)copy.append(node('p','technology',project.technologies.join(' · ')));
-          const details=node('details');details.append(node('summary','',project.concept?'Explore the concept':'Project details'),node('p','cms-copy',project.description));
+          // "Project details" holds extra text, the demo note and the website link; it is left out when there is nothing extra to show.
+          const details=node('details');details.append(node('summary','',project.concept?'Explore the concept':'Project details'));
+          if(project.description&&project.description.trim()!==(project.shortDescription||'').trim())details.append(node('p','cms-copy',project.description));
           if(project.concept)details.append(node('p','','An illustrative demo or concept, not a client case study.'));
           const projectHref=safeUrl(project.projectUrl,false,true);
           if(projectHref){const url=node('a','text-link','View project ↗');url.href=projectHref;url.target='_blank';url.rel='noopener noreferrer';url.setAttribute('aria-label',`View ${project.title} (opens in a new tab)`);details.append(url);}
-          copy.append(details);article.append(art,copy);container.append(article);
+          if(details.children.length>1)copy.append(details);
+          article.append(art,copy);container.append(article);
         });reveal(container);
       }
     }catch{containers.forEach(container=>status(container,'Portfolio is temporarily unavailable. Please check back later.'));}

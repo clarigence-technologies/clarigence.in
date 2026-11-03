@@ -6,7 +6,8 @@
   const legacy=[document.querySelector('#overview'),document.querySelector('.stat-grid'),document.querySelector('#enquiries')];
   const modules=[['services','Services'],['portfolio','Portfolio'],['clients','Clients'],['home','Homepage'],['about','About'],['business','Site Settings'],['seo','SEO']];
   let currentModule='',generation=0,documentGeneration=0,schemaPromise;
-  let projectClients=new Map();
+  let projectClients=new Map(),projectSlugs=new Set(),nextProjectOrder=10,nextClientOrder=10;
+  const imageSrc=url=>!url?'':/^(https?:)?\/\//.test(url)||url.startsWith('/')?url:'/'+url;
   const nav=document.querySelector('.side-nav');
   modules.forEach(([key,label])=>{const a=el('a','side-link',label);a.href=`#cms-${key}`;a.dataset.cms=key;nav.append(a);});
   const button=(label,callback,cls='button')=>{const b=el('button',cls,label);b.type='button';b.addEventListener('click',callback);return b;};
@@ -32,10 +33,11 @@
     const message=el('p','form-message','Loading content…');message.setAttribute('role','status');message.setAttribute('aria-live','polite');panel.append(message);
     try{
       if(key==='clients'){
-        const items=await apiRequest('/api/admin/clients');if(token!==generation)return;message.textContent='';renderClients(items,message);
+        const items=await apiRequest('/api/admin/clients');if(token!==generation)return;nextClientOrder=Math.max(0,...items.map(i=>i.displayOrder))+10;message.textContent='';renderClients(items,message);
       }else if(key==='services'||key==='portfolio'){
         const [items,clientList]=await Promise.all([apiRequest(`/api/admin/cms/${key}`),key==='portfolio'?apiRequest('/api/admin/clients'):Promise.resolve([])]);if(token!==generation)return;
         projectClients=new Map(clientList.filter(c=>c.projectSlug).map(c=>[c.projectSlug,c]));
+        if(key==='portfolio'){projectSlugs=new Set(items.map(i=>i.slug));nextProjectOrder=Math.max(0,...items.map(i=>i.displayOrder))+10;}
         message.textContent='';renderList(key,items,message);
       }else{
         schemaPromise ||= apiRequest('/api/admin/content/schema').catch(error=>{schemaPromise=null;throw error;});const schemas=await schemaPromise;if(token!==generation)return;
@@ -51,34 +53,46 @@
     }catch(error){if(token===generation)status(message,error.message,'error');}
   }
   function renderList(kind,items,message){
-    const toolbar=el('div','cms-toolbar');toolbar.append(button(`Add ${kind==='services'?'service':'project'}`,()=>itemForm(kind,null,message),'button primary-button'),el('p','',kind==='portfolio'?'All published projects appear on the Portfolio page. Use “Add to happy clients” to also show a project’s logo under “Our happy clients” on the homepage.':'Lower display order appears first. Disable/unpublish to hide a record without deleting it.'));
+    const portfolio=kind==='portfolio';
+    const toolbar=el('div','cms-toolbar');toolbar.append(button(`Add ${portfolio?'project':'service'}`,()=>portfolio?projectForm(null,message):itemForm(kind,null,message),'button primary-button'),el('p','',portfolio?'Published projects appear on the Portfolio page. “Add to happy clients” also shows the client’s logo under “Our happy clients” on the homepage.':'Lower display order appears first. Disable/unpublish to hide a record without deleting it.'));
     panel.append(toolbar);
-    if(!items.length){panel.append(el('p','cms-empty','No records yet. Add your first project or service.'));return;}
+    if(!items.length){panel.append(el('p','cms-empty',portfolio?'No projects yet. Add your first project.':'No services yet. Add your first service.'));return;}
     const list=el('div','cms-records');
     items.forEach(item=>{
-      const row=el('article','cms-record');const intro=el('div');intro.append(el('h2','',item.name),el('p','',`${item.active?'Published':'Draft / inactive'} · Order ${item.displayOrder} · ${item.slug}${kind==='portfolio'?(projectClients.get(item.slug)?.active?' · In Our happy clients':' · Portfolio only'):''}${item.concept&&kind==='portfolio'?' · Demo/concept':''}`));
-      const actions=el('div','cms-row-actions');
-      actions.append(button('Edit',async event=>{
+      const row=el('article','cms-record');const intro=el('div',portfolio?'cms-client-intro':'');
+      const linked=portfolio?projectClients.get(item.slug):null;
+      if(portfolio){
+        const thumb=item.imageUrl?el('img','cms-project-thumb'):el('span','cms-project-thumb is-empty','No photo');
+        if(item.imageUrl){thumb.src=imageSrc(item.imageUrl);thumb.alt='';thumb.loading='lazy';}
+        intro.append(thumb);
+      }
+      const meta=portfolio?[item.active?'Published':'Draft (hidden)',`Position ${item.displayOrder}`,linked?.active?'In Our happy clients':'Portfolio only',...(item.concept?['Demo / concept']:[])].join(' · '):`${item.active?'Published':'Draft / inactive'} · Order ${item.displayOrder} · ${item.slug}`;
+      const text=el('div');text.append(el('h2','',item.name),el('p','',meta));intro.append(text);
+      const edit=async(event,options={})=>{
         const target=event.currentTarget;target.disabled=true;const token=++generation;
         status(message,'Loading saved record…');
         try{
           const saved=await apiRequest(`/api/admin/cms/${kind}/${item.id}`);
-          if(token===generation)itemForm(kind,saved,message);
+          if(token===generation){if(portfolio)projectForm(saved,message,options);else itemForm(kind,saved,message);}
         }catch(error){if(token===generation)status(message,error.message,'error');}
         finally{target.disabled=false;}
-      }),...(kind==='portfolio'?[button(projectClients.get(item.slug)?.active?'Remove from happy clients':'Add to happy clients',async event=>{
-        const target=event.currentTarget;const linked=projectClients.get(item.slug);target.disabled=true;
+      };
+      const actions=el('div','cms-row-actions');
+      actions.append(button('Edit',event=>edit(event)));
+      if(portfolio)actions.append(button(linked?.active?'Remove from happy clients':'Add to happy clients',async event=>{
+        // No logo yet: open the project form so the logo can be uploaded.
+        if(!linked?.active&&!linked?.logoUrl)return edit(event,{addToClients:true});
+        const target=event.currentTarget;target.disabled=true;
         try{
-          // No logo yet: open the project form so a logo can be uploaded.
-          if(!linked?.active&&!linked?.logoUrl){const saved=await apiRequest(`/api/admin/cms/portfolio/${item.id}`);itemForm(kind,saved,message,{addToClients:true});return;}
           await apiRequest(`/api/admin/clients/project/${encodeURIComponent(item.slug)}`,{method:'PUT',body:JSON.stringify({show:!linked.active})});
           await openModule(kind);status(panel.querySelector('.form-message'),linked.active?'Logo removed from Our happy clients. The project stays on the Portfolio page.':'Logo added to Our happy clients on the homepage'+(item.active?'.':' (visible once the project is published).'),'success');
         }catch(e){status(message,e.message,'error');target.disabled=false;}
-      })]:[]),button(item.active?'Deactivate':'Publish',async event=>{
+      }));
+      actions.append(button(item.active?(portfolio?'Unpublish':'Deactivate'):'Publish',async event=>{
         const target=event.currentTarget;target.disabled=true;
         try{await apiRequest(`/api/admin/cms/${kind}/${item.id}`,{method:'PUT',body:JSON.stringify({...item,active:!item.active})});await openModule(kind);status(panel.querySelector('.form-message'),'Publication status updated.','success');summary();}catch(e){status(message,e.message,'error');target.disabled=false;}
       }),button('Delete',async event=>{
-        if(!window.confirm(`Delete “${item.name}” permanently? This cannot be undone. You can deactivate it instead.`))return;
+        if(!window.confirm(`Delete “${item.name}” permanently? This cannot be undone. You can ${portfolio?'unpublish':'deactivate'} it instead.`))return;
         const target=event.currentTarget;target.disabled=true;
         try{await apiRequest(`/api/admin/cms/${kind}/${item.id}`,{method:'DELETE'});await openModule(kind);status(panel.querySelector('.form-message'),'Record deleted.','success');summary();}catch(e){status(message,e.message,'error');target.disabled=false;}
       },'button delete-button'));
@@ -100,7 +114,7 @@
       input.pattern='[a-z0-9]+(?:-[a-z0-9]+)*';
       wrap.append(el('small','','Internal identifier, such as my-project. It stays fixed after creation. Enter the website address in Project URL.'));
     }
-    if(name==='projectUrl')wrap.append(el('small','','Use www.abc.com, https://www.abc.com, or an HTTP URL. Addresses without a scheme are saved with https://.'));
+    if(name==='projectUrl')wrap.append(el('small','','Adds a “View project ↗” link to the card. For example www.example.com.'));
     form.append(wrap);return input;
   }
   function formFeedback(form,message,error){
@@ -109,76 +123,118 @@
       const input=form.elements.namedItem(name);if(!input)continue;input.setAttribute('aria-invalid','true');document.getElementById(`${input.id}-error`).textContent=text;first ||=input;
     }first?.focus();
   }
-  function itemForm(kind,item,message,options={}){
+  function itemForm(kind,item,message){
     panel.querySelectorAll('.cms-toolbar,.cms-records,.cms-empty,.cms-editor').forEach(n=>n.remove());message.textContent='';
-    const form=el('form','cms-editor');form.append(el('h2','',`${item?'Edit':'Add'} ${kind==='services'?'service':'project'}`),el('p','','Fields marked * are required. Content is plain text, not HTML.'));
-    const definitions=[{name:'name',label:kind==='services'?'Service name':'Project title',max:120,required:true},{name:'slug',label:'Stable internal slug',max:120,required:true},{name:'shortDescription',label:'Short description',type:'textarea',max:600,required:true},{name:'description',label:'Full description',type:'textarea',max:12000,required:true},{name:'icon',label:'Icon',type:'icon',required:true},{name:'imageUrl',label:'Image URL/path (optional)',type:'image',max:2048},{name:'displayOrder',label:'Display order',type:'number',required:true},{name:'active',label:kind==='services'?'Active / visible':'Published',type:'boolean',required:true}];
-    if(kind==='services')definitions.push({name:'capabilities',label:'Key capabilities',type:'list',max:6000},{name:'benefits',label:'Business benefits',type:'list',max:6000},{name:'useCases',label:'Typical use cases',type:'textarea',max:2000});
-    else definitions.push({name:'category',label:'Category',max:120},{name:'technologies',label:'Technologies',type:'list',max:2400},{name:'projectUrl',label:'Project URL (optional)',type:'url',max:2048},{name:'concept',label:'Clearly label as demo / concept',type:'boolean'});
-    definitions.forEach(def=>field(form,def,item?.[def.name]??({displayOrder:10,active:false,featured:false,concept:true,icon:'window'}[def.name]??'')));
-    if(kind==='portfolio'){
-      const wrap=el('div','cms-field');const label=el('label','','Upload photo (optional)');label.htmlFor='cms-photo';
-      const photo=el('input');photo.type='file';photo.id='cms-photo';photo.name='photo';photo.accept='image/png,image/jpeg,image/gif';
-      const error=el('span','cms-field-error');error.id='cms-photo-error';photo.setAttribute('aria-describedby','cms-photo-help cms-photo-error');
-      const help=el('small','','Choose a PNG, JPEG or GIF photo up to 5 MB (maximum 16 million pixels). It replaces the image URL when you save. Leave empty to keep the current image or save without a photo.');help.id='cms-photo-help';
-      photo.addEventListener('change',()=>{error.textContent='';photo.removeAttribute('aria-invalid');});
-      wrap.append(label,photo,help,error);form.elements.imageUrl.closest('.cms-field').before(wrap);
-    }
-    if(kind==='portfolio'){
-      // "Our happy clients" on the homepage: optional client logo for this project.
-      const linked=item?projectClients.get(item.slug):null;
-      form.append(el('h3','cms-subheading','Our happy clients (homepage)'));
-      const show=field(form,{name:'showInClients',label:'Add this project’s logo to Our happy clients',type:'boolean'},String(Boolean(options.addToClients||linked?.active)));
-      show.closest('.cms-field').append(el('small','','Yes: the client logo appears under “Our happy clients” on the homepage. No: the project appears on the Portfolio page only.'));
-      const logoWrap=el('div','cms-field');const logoLabel=el('label','','Upload client logo');logoLabel.htmlFor='cms-clientLogo';
-      const logoFile=el('input');logoFile.type='file';logoFile.id='cms-clientLogo';logoFile.name='clientLogo';logoFile.accept='image/png,image/jpeg,image/gif';
-      const logoError=el('span','cms-field-error');logoError.id='cms-clientLogo-error';logoFile.setAttribute('aria-describedby','cms-clientLogo-help cms-clientLogo-error');
-      const logoHelp=el('small','',linked?.logoUrl?'Current logo shown below. Choose a file only to replace it.':'PNG, JPEG or GIF up to 5 MB. A square or round logo on a transparent background looks best.');logoHelp.id='cms-clientLogo-help';
-      logoFile.addEventListener('change',()=>{logoError.textContent='';logoFile.removeAttribute('aria-invalid');});
-      logoWrap.append(logoLabel,logoFile,logoHelp,logoError);
-      if(linked?.logoUrl){const preview=el('img','cms-client-logo');preview.src=/^(https?:)?\/\//.test(linked.logoUrl)||linked.logoUrl.startsWith('/')?linked.logoUrl:'/'+linked.logoUrl;preview.alt='Current client logo';logoWrap.append(preview);}
-      form.append(logoWrap);
-      const logoPath=field(form,{name:'clientLogoUrl',label:'Client logo path (optional)',type:'image',max:2048},linked?.logoUrl||'');
-      const toggleLogo=()=>{const on=show.value==='true';logoWrap.hidden=!on;logoPath.closest('.cms-field').hidden=!on;};
-      show.addEventListener('change',toggleLogo);toggleLogo();
-      if(options.addToClients)queueMicrotask(()=>{logoFile.focus();status(message,'Upload the client logo, then save to add it to Our happy clients.');});
-    }
+    const form=el('form','cms-editor');form.append(el('h2','',`${item?'Edit':'Add'} service`),el('p','','Fields marked * are required. Content is plain text, not HTML.'));
+    const definitions=[{name:'name',label:'Service name',max:120,required:true},{name:'slug',label:'Stable internal slug',max:120,required:true},{name:'shortDescription',label:'Short description',type:'textarea',max:600,required:true},{name:'description',label:'Full description',type:'textarea',max:12000,required:true},{name:'icon',label:'Icon',type:'icon',required:true},{name:'imageUrl',label:'Image URL/path (optional)',type:'image',max:2048},{name:'displayOrder',label:'Display order',type:'number',required:true},{name:'active',label:'Active / visible',type:'boolean',required:true},{name:'capabilities',label:'Key capabilities',type:'list',max:6000},{name:'benefits',label:'Business benefits',type:'list',max:6000},{name:'useCases',label:'Typical use cases',type:'textarea',max:2000}];
+    definitions.forEach(def=>field(form,def,item?.[def.name]??({displayOrder:10,active:false,icon:'window'}[def.name]??'')));
     if(item)form.elements.slug.readOnly=true;
-    else{let edited=false;form.elements.slug.addEventListener('input',()=>edited=true);form.elements.name.addEventListener('input',()=>{if(!edited)form.elements.slug.value=form.elements.name.value.toLowerCase().normalize('NFKD').replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');});}
+    else{let edited=false;form.elements.slug.addEventListener('input',()=>edited=true);form.elements.name.addEventListener('input',()=>{if(!edited)form.elements.slug.value=slugify(form.elements.name.value);});}
     const actions=el('div','cms-form-actions');const save=el('button','button primary-button','Save');save.type='submit';actions.append(save,button('Cancel',()=>openModule(kind)));form.append(actions);panel.append(form);form.elements.name.focus();
     form.addEventListener('submit',async event=>{
       event.preventDefault();if(save.disabled||!form.reportValidity())return;save.disabled=true;save.textContent='Saving…';status(message,'Saving content…');
       const payload={version:item?.version??null};
       definitions.forEach(def=>{const input=form.elements.namedItem(def.name);payload[def.name]=def.type==='boolean'?input.value==='true':def.type==='number'?Number(input.value):def.type==='list'?input.value.split('\n').map(s=>s.trim()).filter(Boolean):input.value.trim();});
-      try{
-        const clientShow=kind==='portfolio'&&form.elements.namedItem('showInClients')?.value==='true';
-        const clientLogoFile=kind==='portfolio'?form.elements.namedItem('clientLogo')?.files[0]:null;
-        if(clientShow&&!clientLogoFile&&!form.elements.namedItem('clientLogoUrl').value.trim())throw Object.assign(new Error('Upload the client logo to add this project to Our happy clients.'),{fieldErrors:{clientLogo:'Upload the client logo.'}});
-        if(clientLogoFile&&clientLogoFile.size>5*1024*1024)throw Object.assign(new Error('Choose a logo up to 5 MB.'),{fieldErrors:{clientLogo:'Choose a logo up to 5 MB.'}});
-        const photo=form.elements.namedItem('photo');const file=photo?.files[0];
-        if(file){
-          if(file.size>5*1024*1024)throw Object.assign(new Error('Choose a photo up to 5 MB.'),{fieldErrors:{photo:'Choose a photo up to 5 MB.'}});
-          status(message,'Uploading photo...');const body=new FormData();body.append('file',file);
-          const uploaded=await apiRequest('/api/admin/cms/portfolio/images',{method:'POST',body});
-          payload.imageUrl=uploaded.imageUrl;form.elements.imageUrl.value=uploaded.imageUrl;photo.value='';
-        }
-        await apiRequest(`/api/admin/cms/${kind}${item?`/${item.id}`:''}`,{method:item?'PUT':'POST',body:JSON.stringify(payload)});
-        if(kind==='portfolio'){
-          const linked=projectClients.get(payload.slug);
-          let clientLogoUrl=form.elements.namedItem('clientLogoUrl').value.trim();
-          if(clientLogoFile){
-            status(message,'Uploading client logo…');const body=new FormData();body.append('file',clientLogoFile);
-            clientLogoUrl=(await apiRequest('/api/admin/cms/portfolio/images',{method:'POST',body})).imageUrl;
-            form.elements.namedItem('clientLogoUrl').value=clientLogoUrl;form.elements.namedItem('clientLogo').value='';
-          }
-          if(clientShow||linked)await apiRequest(`/api/admin/clients/project/${encodeURIComponent(payload.slug)}`,{method:'PUT',body:JSON.stringify({show:clientShow,logoUrl:clientLogoUrl||null})});
-        }
-        await openModule(kind);status(panel.querySelector('.form-message'),'Content saved. Refresh the public page to see the change.','success');summary();}
+      try{await apiRequest(`/api/admin/cms/${kind}${item?`/${item.id}`:''}`,{method:item?'PUT':'POST',body:JSON.stringify(payload)});await openModule(kind);status(panel.querySelector('.form-message'),'Content saved. Refresh the public page to see the change.','success');summary();}
       catch(error){formFeedback(form,message,error);}
       finally{save.disabled=false;save.textContent='Save';}
     });
   }
-  const logoSrc=url=>/^(https?:)?\/\//.test(url)||url.startsWith('/')?url:'/'+url;
+  /* Shared helpers for the project and client forms. */
+  const slugify=text=>text.toLowerCase().normalize('NFKD').replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
+  const hint=(input,text)=>{input.closest('.cms-field').append(el('small','',text));return input;};
+  function section(form,title,note){
+    const box=el('fieldset','cms-section');box.append(el('legend','',title));if(note)box.append(el('p','cms-section-note',note));form.append(box);return box;
+  }
+  function choice(container,{name,label,options,value}){
+    const wrap=el('div','cms-field');const title=el('label','',label);title.htmlFor=`cms-${name}`;
+    const select=el('select');select.id=title.htmlFor;select.name=name;options.forEach(([optionValue,text])=>select.append(new Option(text,optionValue)));select.value=value;
+    const error=el('span','cms-field-error');error.id=`${select.id}-error`;select.setAttribute('aria-describedby',error.id);wrap.append(title,select,error);container.append(wrap);return select;
+  }
+  /* Image upload with a preview of the current image; files are uploaded when the form is saved. */
+  function upload(container,{name,label,help,current,removeLabel}){
+    const wrap=el('div','cms-field cms-upload');const title=el('label','',label);title.htmlFor=`cms-${name}`;
+    const input=el('input');input.type='file';input.id=title.htmlFor;input.name=name;input.accept='image/png,image/jpeg,image/gif';
+    const error=el('span','cms-field-error');error.id=`${input.id}-error`;const note=el('small','',help);note.id=`${input.id}-help`;input.setAttribute('aria-describedby',`${note.id} ${error.id}`);
+    const preview=el('img','cms-upload-preview');preview.alt=`Current ${label.replace(' *','').toLowerCase()}`;preview.hidden=!current;if(current)preview.src=imageSrc(current);
+    let remove=null;
+    input.addEventListener('change',()=>{
+      error.textContent='';input.removeAttribute('aria-invalid');const file=input.files[0];
+      if(file){preview.src=URL.createObjectURL(file);preview.hidden=false;if(remove)remove.checked=false;}
+      else{preview.hidden=!current||Boolean(remove?.checked);if(current)preview.src=imageSrc(current);}
+    });
+    wrap.append(title,preview,input,note,error);
+    if(removeLabel&&current){
+      const check=el('label','cms-check');remove=el('input');remove.type='checkbox';remove.name=`${name}Remove`;check.append(remove,document.createTextNode(removeLabel));
+      remove.addEventListener('change',()=>{if(remove.checked){input.value='';preview.hidden=true;}else{preview.src=imageSrc(current);preview.hidden=false;}});
+      wrap.append(check);
+    }
+    container.append(wrap);return {input,wrap,get file(){return input.files[0];},get removed(){return Boolean(remove?.checked);}};
+  }
+  async function uploadImage(file,field,message,label){
+    if(file.size>5*1024*1024)throw Object.assign(new Error(`Choose a ${label} up to 5 MB.`),{fieldErrors:{[field]:`Choose a ${label} up to 5 MB.`}});
+    status(message,`Uploading ${label}…`);const body=new FormData();body.append('file',file);
+    try{return (await apiRequest('/api/admin/cms/portfolio/images',{method:'POST',body})).imageUrl;}
+    catch(error){if(error.fieldErrors?.photo)error.fieldErrors[field]=error.fieldErrors.photo;throw error;}
+  }
+  const renameErrors=(error,names)=>{if(error.fieldErrors)for(const [from,to] of Object.entries(names))if(error.fieldErrors[from])error.fieldErrors[to]=error.fieldErrors[from];return error;};
+  /* Portfolio project form: only what visitors see. The internal ID (slug) and icon are handled automatically. */
+  function projectForm(item,message,options={}){
+    panel.querySelectorAll('.cms-toolbar,.cms-records,.cms-empty,.cms-editor').forEach(n=>n.remove());message.textContent='';
+    const linked=item?projectClients.get(item.slug):null;
+    const form=el('form','cms-editor cms-project-form');
+    form.append(el('h2','',item?`Edit project: ${item.name}`:'Add project'),el('p','','Only fields marked * are required.'));
+    const about=section(form,'Project','Shown on the Portfolio page.');
+    const name=field(about,{name:'name',label:'Project title',max:120,required:true},item?.name||'');
+    hint(field(about,{name:'category',label:'Category',max:120},item?.category||''),'Small label above the title, e.g. Retail website.');
+    hint(field(about,{name:'shortDescription',label:'Short description',type:'textarea',max:600,required:true},item?.shortDescription||''),'One or two sentences shown on the project card.');
+    hint(field(about,{name:'description',label:'Project details',type:'textarea',max:12000},item&&item.description!==item.shortDescription?item.description:''),'Shown when visitors open “Project details”. Leave empty if the short description is enough.');
+    const website=field(about,{name:'projectUrl',label:'Project website',type:'url',max:2048},item?.projectUrl||'');website.placeholder='www.example.com';
+    field(about,{name:'technologies',label:'Technologies used',type:'list',max:2400},item?.technologies||[]);
+    const photoBox=section(form,'Project photo','Shown at the top of the project card.');
+    const photo=upload(photoBox,{name:'photo',label:'Photo',help:'PNG, JPEG or GIF up to 5 MB. A wide image (about 16:10) looks best. Without a photo, the card shows a simple placeholder.',current:item?.imageUrl,removeLabel:'Remove the current photo'});
+    const visibility=section(form,'Visibility');
+    choice(visibility,{name:'active',label:'Status',value:String(item?item.active:true),options:[['true','Published – visible on the Portfolio page'],['false','Draft – hidden from the website']]});
+    choice(visibility,{name:'concept',label:'Project type',value:String(item?item.concept:false),options:[['false','Real client project'],['true','Demo / concept – adds a “DEMO / CONCEPT” badge']]});
+    hint(field(visibility,{name:'displayOrder',label:'Position',type:'number',required:true},item?.displayOrder??nextProjectOrder),'Lower numbers appear first. New projects are placed at the end.');
+    const clientsBox=section(form,'Our happy clients (homepage)','Optionally show this client’s logo on the homepage.');
+    const show=choice(clientsBox,{name:'showInClients',label:'Show client logo on the homepage',value:String(Boolean(options.addToClients||linked?.active)),options:[['false','No – Portfolio page only'],['true','Yes – add the logo under “Our happy clients”']]});
+    const logo=upload(clientsBox,{name:'clientLogo',label:'Client logo',help:'PNG, JPEG or GIF up to 5 MB. A square or round logo on a transparent background looks best.',current:linked?.logoUrl});
+    const toggleLogo=()=>{logo.wrap.hidden=show.value!=='true';};show.addEventListener('change',toggleLogo);toggleLogo();
+    const actions=el('div','cms-form-actions');const save=el('button','button primary-button',item?'Save changes':'Add project');save.type='submit';actions.append(save,button('Cancel',()=>openModule('portfolio')));form.append(actions);panel.append(form);
+    if(options.addToClients){logo.input.focus();status(message,'Upload the client logo, then save to add it to Our happy clients.');}else name.focus();
+    form.addEventListener('submit',async event=>{
+      event.preventDefault();if(save.disabled||!form.reportValidity())return;
+      const label=save.textContent;save.disabled=true;save.textContent='Saving…';status(message,'Saving project…');
+      const value=key=>form.elements.namedItem(key).value.trim();
+      const clientShow=show.value==='true';
+      try{
+        if(clientShow&&!logo.file&&!linked?.logoUrl)throw Object.assign(new Error('Upload the client logo to show it under Our happy clients.'),{fieldErrors:{clientLogo:'Upload the client logo.'}});
+        let slug=item?.slug;
+        if(!slug){
+          slug=slugify(value('name'))||`project-${Date.now().toString(36)}`;
+          for(let n=2,base=slug;projectSlugs.has(slug);n++)slug=`${base}-${n}`;
+        }
+        let imageUrl=photo.removed?'':(item?.imageUrl||'');
+        if(photo.file)imageUrl=await uploadImage(photo.file,'photo',message,'photo');
+        const shortDescription=value('shortDescription');
+        const payload={version:item?.version??null,name:value('name'),slug,shortDescription,description:value('description')||shortDescription,icon:item?.icon||'window',imageUrl,
+          displayOrder:Number(value('displayOrder')),active:value('active')==='true',category:value('category'),projectUrl:value('projectUrl'),concept:value('concept')==='true',
+          technologies:form.elements.namedItem('technologies').value.split('\n').map(s=>s.trim()).filter(Boolean)};
+        status(message,'Saving project…');
+        await apiRequest(`/api/admin/cms/portfolio${item?`/${item.id}`:''}`,{method:item?'PUT':'POST',body:JSON.stringify(payload)});
+        if(clientShow||linked){
+          const logoUrl=logo.file?await uploadImage(logo.file,'clientLogo',message,'logo'):(linked?.logoUrl||null);
+          await apiRequest(`/api/admin/clients/project/${encodeURIComponent(slug)}`,{method:'PUT',body:JSON.stringify({show:clientShow,logoUrl})});
+        }
+        await openModule('portfolio');status(panel.querySelector('.form-message'),item?'Project saved.':'Project added.','success');summary();
+      }catch(error){
+        if(error.fieldErrors?.slug)error.message='A project with a very similar title already exists. Please change the title.';
+        formFeedback(form,message,renameErrors(error,{imageUrl:'photo',clientLogoUrl:'clientLogo',logoUrl:'clientLogo',description:'description'}));
+      }finally{save.disabled=false;save.textContent=label;}
+    });
+  }
+  const logoSrc=imageSrc;
   function renderClients(items,message){
     const toolbar=el('div','cms-toolbar');toolbar.append(button('Add client',()=>clientForm(null,message),'button primary-button'),el('p','','Client logos appear in the homepage "Our happy clients" section. Lower display order appears first.'));
     panel.append(toolbar);
@@ -202,32 +258,26 @@
   }
   function clientForm(item,message){
     panel.querySelectorAll('.cms-toolbar,.cms-records,.cms-empty,.cms-editor').forEach(n=>n.remove());message.textContent='';
-    const form=el('form','cms-editor');form.append(el('h2','',`${item?'Edit':'Add'} client`),el('p','','Fields marked * are required. Upload a logo or enter an existing image path.'));
-    const definitions=[{name:'name',label:'Client name',max:120,required:true},{name:'logoUrl',label:'Logo URL/path',type:'image',max:2048},{name:'websiteUrl',label:'Client website (optional)',type:'url',max:2048},{name:'displayOrder',label:'Display order',type:'number',required:true},{name:'active',label:'Published',type:'boolean',required:true}];
-    definitions.forEach(def=>field(form,def,item?.[def.name]??({displayOrder:10,active:true}[def.name]??'')));
-    const wrap=el('div','cms-field');const label=el('label','','Upload logo');label.htmlFor='cms-photo';
-    const photo=el('input');photo.type='file';photo.id='cms-photo';photo.name='photo';photo.accept='image/png,image/jpeg,image/gif';
-    const error=el('span','cms-field-error');error.id='cms-photo-error';photo.setAttribute('aria-describedby','cms-photo-help cms-photo-error');
-    const help=el('small','','PNG, JPEG or GIF up to 5 MB. A transparent PNG looks best. It replaces the logo path when you save.');help.id='cms-photo-help';
-    photo.addEventListener('change',()=>{error.textContent='';photo.removeAttribute('aria-invalid');});
-    wrap.append(label,photo,help,error);form.elements.logoUrl.closest('.cms-field').before(wrap);
-    const actions=el('div','cms-form-actions');const save=el('button','button primary-button','Save');save.type='submit';actions.append(save,button('Cancel',()=>openModule('clients')));form.append(actions);panel.append(form);form.elements.name.focus();
+    const form=el('form','cms-editor');
+    form.append(el('h2','',item?`Edit client: ${item.name}`:'Add client'),el('p','',item?.projectSlug?'This logo belongs to a portfolio project; you can also manage it from that project in Portfolio.':'Only fields marked * are required.'));
+    const name=field(form,{name:'name',label:'Client name',max:120,required:true},item?.name||'');
+    const website=field(form,{name:'websiteUrl',label:'Client website',type:'url',max:2048},item?.websiteUrl||'');website.placeholder='www.example.com';
+    const logo=upload(form,{name:'logo',label:'Logo *',help:'PNG, JPEG or GIF up to 5 MB. A square or round logo on a transparent background looks best.',current:item?.logoUrl});
+    choice(form,{name:'active',label:'Status',value:String(item?item.active:true),options:[['true','Shown on the homepage'],['false','Hidden']]});
+    hint(field(form,{name:'displayOrder',label:'Position',type:'number',required:true},item?.displayOrder??nextClientOrder),'Lower numbers appear first.');
+    const actions=el('div','cms-form-actions');const save=el('button','button primary-button',item?'Save changes':'Add client');save.type='submit';actions.append(save,button('Cancel',()=>openModule('clients')));form.append(actions);panel.append(form);name.focus();
     form.addEventListener('submit',async event=>{
-      event.preventDefault();if(save.disabled||!form.reportValidity())return;save.disabled=true;save.textContent='Saving…';status(message,'Saving client…');
-      const payload={version:item?.version??null};
-      definitions.forEach(def=>{const input=form.elements.namedItem(def.name);payload[def.name]=def.type==='boolean'?input.value==='true':def.type==='number'?Number(input.value):input.value.trim();});
+      event.preventDefault();if(save.disabled||!form.reportValidity())return;
+      const label=save.textContent;save.disabled=true;save.textContent='Saving…';status(message,'Saving client…');
+      const value=key=>form.elements.namedItem(key).value.trim();
       try{
-        const file=photo.files[0];
-        if(file){
-          if(file.size>5*1024*1024)throw Object.assign(new Error('Choose a logo up to 5 MB.'),{fieldErrors:{photo:'Choose a logo up to 5 MB.'}});
-          status(message,'Uploading logo…');const body=new FormData();body.append('file',file);
-          const uploaded=await apiRequest('/api/admin/cms/portfolio/images',{method:'POST',body});
-          payload.logoUrl=uploaded.imageUrl;form.elements.logoUrl.value=uploaded.imageUrl;photo.value='';
-        }
-        if(!payload.logoUrl)throw Object.assign(new Error('Upload a logo or enter a logo path.'),{fieldErrors:{photo:'Upload a logo or enter a logo path.'}});
-        await apiRequest(`/api/admin/clients${item?`/${item.id}`:''}`,{method:item?'PUT':'POST',body:JSON.stringify(payload)});await openModule('clients');status(panel.querySelector('.form-message'),'Client saved. Refresh the homepage to see the change.','success');}
-      catch(error){formFeedback(form,message,error);}
-      finally{save.disabled=false;save.textContent='Save';}
+        if(!logo.file&&!item?.logoUrl)throw Object.assign(new Error('Upload the client logo.'),{fieldErrors:{logo:'Upload the client logo.'}});
+        const logoUrl=logo.file?await uploadImage(logo.file,'logo',message,'logo'):item.logoUrl;
+        const payload={version:item?.version??null,name:value('name'),logoUrl,websiteUrl:value('websiteUrl'),displayOrder:Number(value('displayOrder')),active:value('active')==='true'};
+        status(message,'Saving client…');
+        await apiRequest(`/api/admin/clients${item?`/${item.id}`:''}`,{method:item?'PUT':'POST',body:JSON.stringify(payload)});await openModule('clients');status(panel.querySelector('.form-message'),'Client saved. Refresh the homepage to see the change.','success');
+      }catch(error){formFeedback(form,message,renameErrors(error,{logoUrl:'logo'}));}
+      finally{save.disabled=false;save.textContent=label;}
     });
   }
   async function loadDocument(key,definitions,message,token){
