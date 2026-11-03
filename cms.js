@@ -1,12 +1,41 @@
 /* Business content is rendered as text; CMS input never becomes executable HTML. */
 (() => {
   const requests = new Map();
+  let staticContentRequest;
   // CMS hydration shares the initial headline timeline rather than replaying it.
   const headlineStart = document.querySelector('.title-letter')?.getAnimations()[0]?.startTime ?? performance.now();
+  const staticContent = () => {
+    if (!staticContentRequest) {
+      const url = window.CLARIGENCE_CONFIG.contentUrl;
+      staticContentRequest = fetch(url, {
+        headers: {Accept: 'application/json'}, credentials: 'omit', signal: AbortSignal.timeout(12000)
+      }).then(response => {
+        if (!response.ok) throw new Error('Content unavailable');
+        return response.json();
+      });
+    }
+    return staticContentRequest;
+  };
+  const staticApi = async path => {
+    const content = await staticContent();
+    if (path === '/api/services') return content.services.filter(service => service.active !== false);
+    if (path.startsWith('/api/services/')) {
+      const slug = decodeURIComponent(path.slice('/api/services/'.length));
+      const service = content.services.find(item => item.slug === slug && item.active !== false);
+      if (service) return service;
+    }
+    if (path === '/api/portfolio') return content.portfolio;
+    if (path.startsWith('/api/content/')) {
+      const document = content.documents[path.slice('/api/content/'.length)];
+      if (document) return document;
+    }
+    throw new Error('Content unavailable');
+  };
   const api = async path => {
     const key = `api:${path}`;
     if (!requests.has(key)) requests.set(key, (async () => {
       const baseUrl = (window.CLARIGENCE_CONFIG.apiBaseUrl || '').replace(/\/$/, '');
+      if (!baseUrl) return staticApi(path);
       const response = await fetch(`${baseUrl}${path}`, {
         headers: {Accept: 'application/json'}, credentials: 'omit', signal: AbortSignal.timeout(12000)
       });
