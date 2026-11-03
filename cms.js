@@ -4,28 +4,16 @@
   // CMS hydration shares the initial headline timeline rather than replaying it.
   const headlineStart = document.querySelector('.title-letter')?.getAnimations()[0]?.startTime ?? performance.now();
   const api = async path => {
-    if (!requests.has('content')) requests.set('content', (async () => {
-      const response = await fetch(window.CLARIGENCE_CONFIG.contentUrl, {
+    const key = `api:${path}`;
+    if (!requests.has(key)) requests.set(key, (async () => {
+      const baseUrl = (window.CLARIGENCE_CONFIG.apiBaseUrl || '').replace(/\/$/, '');
+      const response = await fetch(`${baseUrl}${path}`, {
         headers: {Accept: 'application/json'}, credentials: 'omit', signal: AbortSignal.timeout(12000)
       });
       if (!response.ok) throw new Error('Content unavailable');
       return response.json();
     })());
-    const content = await requests.get('content');
-    const services = content.services.filter(item => item.active).sort((a, b) => a.displayOrder - b.displayOrder);
-    if (path === '/api/services') return services;
-    if (path.startsWith('/api/services/')) {
-      const service = services.find(item => item.slug === decodeURIComponent(path.slice('/api/services/'.length)));
-      if (!service) throw new Error('Service unavailable');
-      return service;
-    }
-    if (path === '/api/portfolio') return content.portfolio;
-    if (path.startsWith('/api/content/')) {
-      const document = content.documents[path.slice('/api/content/'.length)];
-      if (!document) throw new Error('Content unavailable');
-      return document;
-    }
-    throw new Error('Unknown content');
+    return requests.get(key);
   };
   const node = (tag, classes, text) => {
     const element=document.createElement(tag);
@@ -252,7 +240,9 @@
   async function clients(){
     const section=document.querySelector('[data-clients-section]');if(!section)return;
     try{
-      const data=await requests.get('content');
+      const response=await fetch(window.CLARIGENCE_CONFIG.contentUrl,{headers:{Accept:'application/json'},credentials:'omit',signal:AbortSignal.timeout(12000)});
+      if(!response.ok)throw new Error('Content unavailable');
+      const data=await response.json();
       const grid=section.querySelector('[data-clients]');
       for(const client of data.clients||[]){
         const href=safeUrl(client.websiteUrl,false,true);
