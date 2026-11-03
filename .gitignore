@@ -22,3 +22,7 @@ Thumbs.db
 .vercel
 .env*
 !.env.example
+
+# Local deployment SSH credentials
+.deploy-ssh/
+deploy/.env
