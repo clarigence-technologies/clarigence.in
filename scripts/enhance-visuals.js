@@ -16,7 +16,10 @@ for(const file of ['index.html','about.html','services.html','solutions.html','p
  html=html.replace('<body>',`<body class="visual-refresh" data-page="${file.replace('.html','')}">`);
  html=html.replaceAll('src="assets/images/clarigence-logo.png"','src="assets/images/clarigence-wordmark.png"').replaceAll('width="2382" height="519"','width="400" height="87"');
  if(!html.includes('href="visuals.css'))html=html.replace(/(<link rel="stylesheet" href="styles\.css(?:\?[^"]*)?">)/,'$1<link rel="stylesheet" href="visuals.css">');
- for(const asset of ['styles.css','visuals.css','script.js','cms.js']){
+ if(!html.includes('fonts.googleapis.com'))html=html.replace('<link rel="stylesheet" href="styles.css','<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Sora:wght@500;600;700;800&display=swap"><link rel="stylesheet" href="styles.css');
+ if(!html.includes('href="experience.css'))html=html.replace(/(<link rel="stylesheet" href="visuals\.css(?:\?[^"]*)?">)/,'$1<link rel="stylesheet" href="experience.css">');
+ if(!html.includes('src="experience.js'))html=html.replace(/(<script src="cms\.js(?:\?[^"]*)?" defer><\/script>)/,'$1<script src="experience.js" defer></script>');
+ for(const asset of ['styles.css','visuals.css','experience.css','script.js','cms.js','experience.js']){
   const escaped=asset.replaceAll('.','\\.');html=html.replace(new RegExp(`((?:href|src)=")${escaped}(?:\\?[^\"]*)?"`,'g'),`$1${asset}?v=${version(asset)}"`);
  }
  if(file==='about.html')html=replaceDiv(html,'<div class="about-artwork"',graphic);

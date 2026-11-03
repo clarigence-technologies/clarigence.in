@@ -21,7 +21,7 @@ The reference was used for its service-led structure, clear primary/secondary ac
 ## Implementation
 
 - All six existing pages share a sticky header, active navigation, mobile menu, CTA system and responsive footer.
-- The homepage follows hero → business value → about → ten services → why Clarigence → process → solutions → concepts → CTA → enquiry form.
+- The homepage follows hero → clients → value ticker → ten services → why Clarigence → featured work (hidden when nothing is published) → enquiry form. The process lives on About; goal-based solutions live on Solutions.
 - Ten detailed service sections include capabilities, benefits, use cases and project enquiry links that preselect the relevant service.
 - Portfolio entries remain illustrative concepts with accessible expandable descriptions.
 - The public CSS was consolidated from about 41 KB to about 22 KB. No production library or font download was added.

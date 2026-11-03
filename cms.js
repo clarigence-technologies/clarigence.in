@@ -155,7 +155,11 @@
       for(const container of containers){
         const selected=container.dataset.featured==='true'?items.filter(p=>p.featured).slice(0,2):items;
         container.replaceChildren();container.setAttribute('aria-busy','false');
-        if(!selected.length){status(container,'No published projects to show yet. Let’s discuss what we could build for your business.','empty');continue;}
+        if(!selected.length){
+          // A homepage teaser with nothing to show only adds length; the portfolio page keeps its message.
+          if(container.dataset.featured==='true'){container.closest('section').hidden=true;continue;}
+          status(container,'No published projects to show yet. Let’s discuss what we could build for your business.','empty');continue;
+        }
         selected.forEach(project=>{
           const article=node('article','work-card');const art=node('div','project-art');
           if(project.imageUrl)art.append(image(project.imageUrl,project.title,'project-image'));
@@ -174,7 +178,10 @@
           copy.append(details);article.append(art,copy);container.append(article);
         });reveal(container);
       }
-    }catch{containers.forEach(container=>status(container,'Portfolio is temporarily unavailable. Please check back later.'));}
+    }catch{containers.forEach(container=>{
+      if(container.dataset.featured==='true')container.closest('section').hidden=true;
+      else status(container,'Portfolio is temporarily unavailable. Please check back later.');
+    });}
   }
   const text=(selector,value)=>{if(value!=null)document.querySelectorAll(selector).forEach(n=>{n.textContent=value;});};
   const multiline=(element,value)=>{

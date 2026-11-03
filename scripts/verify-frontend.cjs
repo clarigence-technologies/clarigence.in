@@ -71,12 +71,15 @@ const content=JSON.parse(fs.readFileSync(path.join(root,'content.json'),'utf8'))
   await page.goto(`${origin}/services#salesforce-development`);await page.waitForLoadState('networkidle');assert.equal(await page.locator('h1').innerText(),'Salesforce Development');
   await page.goto(`${origin}/contact?service=salesforce-development`);await page.waitForLoadState('networkidle');assert.equal(await page.locator('[name=service]').inputValue(),'Salesforce Development');
   await page.goto(origin+'/');await page.waitForLoadState('networkidle');
+  // The homepage stays compact; the six-step process lives on About.
+  await page.goto(origin+'/about');await page.waitForLoadState('networkidle');
   assert.equal(await page.locator('.process-grid article').count(),6);
+  await page.goto(origin+'/');await page.waitForLoadState('networkidle');
   await page.locator('.project-copy summary').first().click();assert(await page.locator('.project-copy details').first().getAttribute('open')!==null);
   assert.equal(await page.locator('.concept-badge').count(),content.portfolio.filter(p=>p.featured).slice(0,2).filter(p=>p.concept).length);
   await page.emulateMedia({reducedMotion:'no-preference'});await page.goto(origin+'/');await page.waitForLoadState('networkidle');
-  assert((await page.locator('.hero-visual').evaluate(n=>getComputedStyle(n).animationName)).includes('artwork-arrive'));
-  await page.emulateMedia({reducedMotion:'reduce'});assert.equal(await page.locator('.hero-visual').evaluate(n=>getComputedStyle(n).animationName),'none');assert.equal(await page.locator('.reveal-pending').count(),0);
+  assert((await page.locator('.hero-visual').evaluate(n=>getComputedStyle(n).animationName)).match(/artwork-arrive|xp-rise/));
+  await page.emulateMedia({reducedMotion:'reduce'});assert.equal(await page.locator('.hero-visual').evaluate(n=>getComputedStyle(n).animationName),'none');await page.waitForFunction(()=>!document.querySelector('.reveal-pending'),null,{timeout:2000});
   // CMS content must remain plain text; published work must not inherit a demo badge.
   const fixture=structuredClone(content);fixture.services[0].name='<img src=x onerror=alert(1)>';fixture.portfolio=[{...fixture.portfolio[0],concept:false,title:'Published example',imageUrl:'assets/images/clarigence-logo.png'}];
   await page.route('**/content.json',r=>r.fulfill({json:fixture}));await page.goto(origin+'/portfolio');await page.waitForLoadState('networkidle');assert.equal(await page.locator('.concept-badge').count(),0);assert.equal(await page.locator('.project-image').count(),1);assert((await page.locator('.service-menu-link').first().textContent()).includes('<img src=x onerror=alert(1)>'));assert.equal(await page.locator('.service-menu-link img').count(),0);
