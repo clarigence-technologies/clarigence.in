@@ -64,6 +64,22 @@ test('Vercel deployment previews and local development can use their own endpoin
   }
 });
 
+test('raw JSON request bodies are parsed before validation', async () => {
+  const app = setup();
+  assert.equal((await app.request({body: Buffer.from(JSON.stringify(valid))})).code, 200);
+  assert.equal(app.calls.length, 1);
+});
+
+test('unparsed Vercel request streams are parsed before validation', async () => {
+  const app = setup();
+  const result = await app.request({
+    body: undefined,
+    async *[Symbol.asyncIterator]() { yield Buffer.from(JSON.stringify(valid)); }
+  });
+  assert.equal(result.code, 200);
+  assert.equal(app.calls.length, 1);
+});
+
 test('malformed, oversized or unsupported request bodies never reach SMTP', async () => {
   const app = setup();
   for (const body of ['{', null, [], true]) assert.equal((await app.request({body})).code, 400);
