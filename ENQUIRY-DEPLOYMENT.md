@@ -19,7 +19,7 @@ URL: select a working backend, verify it, then update the frontend environment.
 ## Hosting choices (no service has been purchased or provisioned)
 
 1. Prefer an always-on Docker-capable host with externally persisted MySQL and
-   backups. Reuse the included Java 21 Dockerfile. A small paid instance may be
+   backups. Reuse the included Java 25 Dockerfile. A small paid instance may be
    needed for predictable availability; select and approve any paid plan yourself.
 2. Render Free can run the backend container as a no-cost evaluation option, but
    it sleeps after 15 idle minutes and blocks SMTP ports 25/465/587. Cold starts

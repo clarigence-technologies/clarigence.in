@@ -38,7 +38,7 @@ public class ContactSubmissionService {
                 || !Objects.equals(clean(c.getCompany()), clean(r.company()))
                 || !c.getService().equals(r.service().trim()) || !c.getMessage().equals(r.message().trim()))
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Submission key already used with different details.");
-        return new ContactResponse(c.getId(), "Your enquiry has been received.", c.getCreatedAt());
+        return new ContactResponse(true, c.getId(), "Your enquiry has been received.", c.getCreatedAt());
     }
     private String clean(String s) { return s == null || s.isBlank() ? "" : s.trim(); }
 }

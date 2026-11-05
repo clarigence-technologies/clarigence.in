@@ -38,6 +38,8 @@ class ContactControllerIntegrationTest {
                                 }
                                 """))
                 .andExpect(status().isCreated())
+                // The public form (script.js) treats a response without success=true as a failure.
+                .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.id").isNumber())
                 .andExpect(jsonPath("$.message").value("Your enquiry has been received."))
                 .andExpect(jsonPath("$.createdAt", matchesPattern(".+Z$")));

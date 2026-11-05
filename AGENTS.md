@@ -4,7 +4,7 @@
 
 The public site consists of six root HTML pages, shared `styles.css`, `visuals.css`, `script.js`, and `cms.js`. Public content lives in `content.json`; images and SVG illustrations belong in `assets/`, including `assets/graphics/`. Authoring, build, preview, and browser verification scripts live in `scripts/`. Generated deployment files go to ignored `dist/`.
 
-`backend/` contains a retained Java 21/Spring Boot API and admin UI, excluded from public deployment. Java packages under `backend/src/main/java/in/clarigence/contactapi/` separate controllers, services, repositories, entities, DTOs, and configuration. Backend tests live in `backend/src/test/`; admin assets live in `backend/src/main/resources/static/admin/`.
+`backend/` contains a retained Java 25/Spring Boot API and admin UI, excluded from public deployment. Java packages under `backend/src/main/java/in/clarigence/contactapi/` separate controllers, services, repositories, entities, DTOs, and configuration. Backend tests live in `backend/src/test/`; admin assets live in `backend/src/main/resources/static/admin/`.
 
 `api/contact.js` is the public Vercel email function; `lib/contact-handler.js` handles SMTP delivery and validation. It is independent of the retained Java backend.
 
@@ -19,7 +19,7 @@ Run from the repository root unless specified:
 - `py scripts/generate-pages.py`: regenerate the six HTML pages after editing shared markup in this script; rebuild afterward.
 - `node scripts/verify-frontend.cjs`: check public routes, responsive layouts, and browser behavior.
 - `node scripts/verify-email-forms.cjs`: verify form validation and simulated delivery outcomes.
-- `mvn clean verify` from `backend/`: build and run backend tests; requires Java 21 and Maven.
+- `mvn clean verify` from `backend/`: build and run backend tests; requires Java 25 and Maven.
 
 ## Coding Style & Naming Conventions
 

@@ -42,7 +42,7 @@ public class ContactService {
         try {
             Contact saved = contactRepository.saveAndFlush(contact);
             events.publishEvent(new EnquiryCreated(saved));
-            return new ContactResponse(saved.getId(), "Your enquiry has been received.", saved.getCreatedAt());
+            return new ContactResponse(true, saved.getId(), "Your enquiry has been received.", saved.getCreatedAt());
         } catch (DataAccessException exception) {
             throw new ContactPersistenceException("We could not save your enquiry right now.", exception);
         }

@@ -7,11 +7,11 @@ Follow [the current Vercel guide](../VERCEL-DEPLOYMENT.md). Railway is no longer
 part of the deployment. The backend has not yet been deployed because hosted
 database credentials are still missing from its Vercel project.
 
-Java 21 / Spring Boot service for the public contact form and a separate admin workspace. The backend serves the admin UI at `/admin/`; the public static website remains in the repository root.
+Java 25 / Spring Boot service for the public contact form and a separate admin workspace. The backend serves the admin UI at `/admin/`; the public static website remains in the repository root.
 
 ## Requirements
 
-- Java 21
+- Java 25
 - Maven 3.6.3 or later
 - MySQL 8 or later
 
@@ -66,7 +66,7 @@ running backend at a public HTTPS URL and a persistent MySQL database reachable
 from that backend. The static Vercel deployment excludes this folder.
 
 Use `backend` as the Docker build context on your backend host. The included
-`Dockerfile` builds Java 21, runs the integration tests, and runs the resulting
+`Dockerfile` builds Java 25, runs the integration tests, and runs the resulting
 service as a non-root user. It supports the host's `PORT` environment variable;
 `SERVER_PORT` takes precedence when explicitly configured.
 The container enables the `production` profile, which requires explicit database
