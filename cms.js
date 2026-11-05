@@ -253,8 +253,10 @@
         }
         const contact=document.querySelector('.contact-info');if(contact){contact.querySelectorAll('[data-business-extra]').forEach(n=>n.remove());if(s.showPhone==='true'&&s.phone){const phone=node('a','',s.phone);phone.href=`tel:${s.phone.replace(/[^+0-9]/g,'')}`;phone.dataset.businessExtra='true';contact.append(phone);}if(s.hours){const hours=node('span','',s.hours);hours.dataset.businessExtra='true';contact.append(hours);}}
       }),
-      api(`/api/content/seo-${key}`).then(s=>{
-        if(key==='services' && (new URLSearchParams(location.search).has('service')||location.hash))return;
+      // The privacy page has no CMS-managed SEO document, so its title and description stay as built.
+      (key==='privacy'?Promise.resolve(null):api(`/api/content/seo-${key}`)).then(s=>{
+        if(!s)return;
+        if(key==='services' &&(new URLSearchParams(location.search).has('service')||location.hash))return;
         document.title=s.title;
         const set=(selector,value)=>{if(value)document.querySelector(selector)?.setAttribute('content',value);};
         set('meta[name=description]',s.description);set('meta[property="og:title"]',s.ogTitle||s.title);set('meta[property="og:description"]',s.ogDescription||s.description);set('meta[property="og:image"]',safeUrl(s.ogImage,true));

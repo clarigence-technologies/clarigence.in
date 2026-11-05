@@ -379,3 +379,20 @@
   .visual-refresh .footer-grid>.footer-column:last-child>p{padding-left:16px;border-left:1px solid #ffffff33;min-height:20px}
   .xp-footer-mark{font-size:clamp(46px,16vw,72px)}
 }
+
+/* Footer legal links and the privacy page. */
+.footer-bottom{flex-wrap:wrap}
+.footer-legal{display:flex;flex-wrap:wrap;gap:4px 20px}
+.footer-legal a{color:#d7e4fb}
+.footer-legal a:hover{text-decoration:underline;text-underline-offset:3px}
+.form-note a{color:#2448d8;text-decoration:underline;text-underline-offset:3px}
+.visual-refresh .legal-content{max-width:780px;padding-top:56px}
+.legal-updated{margin:0 0 8px;color:var(--muted);font-size:14px}
+.visual-refresh .legal-content h2{margin:36px 0 12px;font-size:clamp(21px,2.4vw,26px);line-height:1.25;font-weight:700}
+.legal-content p,.legal-content li{color:var(--muted);font-size:16px;line-height:1.7}
+.legal-content p{margin:0 0 14px}
+.legal-content ul{margin:0 0 14px;padding-left:22px;list-style:disc}
+.legal-content li{margin-bottom:8px}
+.legal-content strong{color:var(--ink)}
+.legal-content a{color:#2448d8;text-decoration:underline;text-underline-offset:3px}
+.legal-content code{padding:1px 6px;border-radius:6px;background:#eef1fb;color:var(--ink);font-size:.9em}

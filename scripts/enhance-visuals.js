@@ -11,7 +11,7 @@ function replaceDiv(html,start,replacement){
  while((match=tags.exec(html))){depth+=match[0].startsWith('</')?-1:1;if(depth===0)return html.slice(0,offset)+replacement+html.slice(tags.lastIndex);}
  return html;
 }
-for(const file of ['index.html','about.html','services.html','solutions.html','portfolio.html','contact.html']){
+for(const file of ['index.html','about.html','services.html','solutions.html','portfolio.html','contact.html','privacy.html']){
  const target=path.join(root,file);let html=fs.readFileSync(target,'utf8');
  html=html.replace('<body>',`<body class="visual-refresh" data-page="${file.replace('.html','')}">`);
  html=html.replaceAll('src="assets/images/clarigence-logo.png"','src="assets/images/clarigence-wordmark.png"').replaceAll('width="2382" height="519"','width="400" height="87"');
@@ -27,4 +27,4 @@ for(const file of ['index.html','about.html','services.html','solutions.html','p
  html=html.replace(/<(h[12])>([^<]+)<br>([^<]+)<\/\1>/g,(_,tag,first,last)=>`<${tag}>${first}<br><span class="heading-accent">${last}</span></${tag}>`);
  fs.writeFileSync(target,html);
 }
-console.log('Applied Clarigence graphics and versioned visual assets to all six existing pages.');
+console.log('Applied Clarigence graphics and versioned visual assets to all seven public pages.');

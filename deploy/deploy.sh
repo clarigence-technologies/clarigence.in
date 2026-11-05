@@ -20,7 +20,7 @@ while IFS= read -r line; do
 done < deploy/.env.example
 
 echo "==> Building website"
-node scripts/build-static.js
+GOOGLE_TAG_ID=GTM-PKQFHWQX node scripts/build-static.js
 
 echo "==> Building backend (runs the backend tests)"
 (cd deploy && docker compose --env-file .env build backend)

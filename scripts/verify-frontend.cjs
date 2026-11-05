@@ -7,7 +7,7 @@ const root=path.resolve(__dirname,'..');
 const output=path.join(root,'artifacts/qa');
 fs.mkdirSync(output,{recursive:true});
 const origin=process.env.QA_ORIGIN||'http://127.0.0.1:8000';
-const routes=['/','/about','/services','/solutions','/portfolio','/contact'];
+const routes=['/','/about','/services','/solutions','/portfolio','/contact','/privacy'];
 const widths=[320,360,375,390,412,430,768,900,1024,1440,1920];
 const content=JSON.parse(fs.readFileSync(path.join(root,'content.json'),'utf8'));
 (async()=>{

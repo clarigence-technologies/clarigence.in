@@ -167,6 +167,8 @@ document.querySelectorAll('.contact-form').forEach(form => {
       form.reset();
       notify('Thank you! We’ve received your enquiry and will get back to you soon to discuss your project.', 'success');
       status.focus();
+      // Sends only the chosen service, never the visitor's details. A failure here must not look like a failed enquiry.
+      try { window.gtag?.('event', 'generate_lead', {service: values.service}); } catch {}
     } catch {
       offerEmailFallback('We couldn’t confirm your enquiry. Your details are still in the form.');
     } finally {

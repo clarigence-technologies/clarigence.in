@@ -22,9 +22,13 @@ fs.mkdirSync(output, {recursive: true});
         if(outcome==='provider')return route.fulfill({status:521,contentType:'text/plain',body:'Web server is down'});
         if(outcome==='html')return route.fulfill({status:200,contentType:'text/html',body:'<html>Service unavailable</html>'});
         if(outcome==='validation')return route.fulfill({status:400,json:{fieldErrors:{email:'private email diagnostic'}}});
-        if(outcome==='success')await new Promise(resolve=>setTimeout(resolve,250));
-        await route.fulfill({status: 200, contentType: 'application/json',
-          body: JSON.stringify({success: outcome === 'success'})});
+        // Success mirrors the production Java backend's response (ContactResponse.java).
+        if(outcome==='success'){
+          await new Promise(resolve=>setTimeout(resolve,250));
+          return route.fulfill({status: 201, contentType: 'application/json',
+            body: JSON.stringify({success: true, id: 1, message: 'Your enquiry has been received.', createdAt: '2026-11-05T05:00:00Z'})});
+        }
+        await route.fulfill({status: 200, contentType: 'application/json', body: JSON.stringify({success: false})});
       });
       await page.goto(`${process.env.QA_ORIGIN || 'http://127.0.0.1:8000'}${path}`);
       await page.waitForFunction(() => !document.querySelector('[name=service]').disabled);
@@ -69,8 +73,9 @@ fs.mkdirSync(output, {recursive: true});
       assert(await page.locator('.form-submit').isDisabled());
       await page.waitForFunction(() => document.querySelector('#form-status').dataset.state === 'success');
       assert.equal(await page.locator('[name=name]').inputValue(), '');
-      assert.equal(submissions.length, 2);
-      const request = submissions[1];
+      // One rejected attempt, the two failure retries above, then the successful one.
+      assert.equal(submissions.length, 4);
+      const request = submissions[3];
       assert.equal(new URL(request.url()).pathname, '/api/contact');
       assert.equal(request.postDataJSON().email, 'test@example.invalid');
       assert.equal(request.postDataJSON().service, 'Website Development');
@@ -89,7 +94,8 @@ fs.mkdirSync(output, {recursive: true});
         assert(!(await page.locator('.contact-form').innerText()).includes('private'));
         if(mode==='validation')assert.equal(await page.locator('[name=email]').getAttribute('aria-invalid'),'true');
         assert.equal(await page.locator('.form-email-fallback').count(), 0);
-        assert.equal(await page.locator('.contact-form a[href^="mailto:"]').count(), 0);
+        // Delivery failures offer an email draft; a validation error only needs the field corrected.
+        assert.equal(await page.locator('.contact-form a[href^="mailto:"]').count(), mode === 'validation' ? 0 : 1);
         assert.equal(await page.locator('[name=message]').inputValue(), message);
         assert.equal(submissions.length, previousCount + 1, 'Failures must not automatically resubmit');
         assert(await page.locator('.form-submit').isEnabled());
@@ -102,7 +108,7 @@ fs.mkdirSync(output, {recursive: true});
       assert.deepEqual(errors, []);
       await page.close();
     }
-    console.log('Both Send enquiry forms passed: same-origin API payload, validation, success, rejected response, server/network/invalid JSON failures, retained details, one submit button, no mail-app fallback and no automatic retries. Desktop/mobile checks passed. No emails sent.');
+    console.log('Both Send enquiry forms passed: same-origin API payload, validation, success, rejected response, server/network/invalid JSON failures, retained details, one submit button, an email draft fallback on delivery failures and no automatic retries. Desktop/mobile checks passed. No emails sent.');
   } finally {
     await browser.close();
   }
