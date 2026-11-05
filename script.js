@@ -165,7 +165,7 @@ document.querySelectorAll('.contact-form').forEach(form => {
       }
       if (result?.success !== true && result?.success !== 'true') throw new Error('Email service did not accept the enquiry');
       form.reset();
-      notify('Thank you. Your enquiry has been accepted for email delivery. We’ll be in touch to discuss your project.', 'success');
+      notify('Thank you! We’ve received your enquiry and will get back to you soon to discuss your project.', 'success');
       status.focus();
     } catch {
       offerEmailFallback('We couldn’t confirm your enquiry. Your details are still in the form.');

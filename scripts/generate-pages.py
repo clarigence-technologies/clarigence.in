@@ -4,6 +4,12 @@ from html import escape
 import re
 
 ROOT = Path(__file__).resolve().parent.parent
+GOOGLE_TAG = '''<script async src="https://www.googletagmanager.com/gtm.js?id=GTM-PKQFHWQX"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+</script>'''
 SERVICES = [
  ('website-development','Website Development','window','A professional online home that makes your business easy to understand and easy to contact.','Responsive business websites, clear navigation and purposeful content help customers take the next step.','Responsive design|On-page SEO|Performance optimization|Enquiry integration','Business websites, service companies and new ventures.'),
  ('salesforce-development','Salesforce Development','cloud','Connect your customer information, sales processes and everyday work with a CRM built around your team.','We help plan, implement and customize Salesforce to support your business processes and customer relationships.','CRM implementation|Custom development|Workflow automation|System integration','Sales pipelines, customer service and connected business operations.'),
@@ -107,6 +113,7 @@ for file,(title,description,body) in CONTENT.items():
  body=body.replace('services.html#','services.html?service=')
  page=f'''<!doctype html>
 <html lang="en"><head>
+{GOOGLE_TAG}
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{escape(title)}</title><meta name="description" content="{escape(description)}">
 <meta name="theme-color" content="#075bea"><link rel="canonical" href="{canonical}">
