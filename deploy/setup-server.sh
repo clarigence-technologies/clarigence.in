@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# One-time setup of a fresh Ubuntu (22.04 or newer) Hostinger VPS for clarigence.in.
+# One-time setup of a fresh Ubuntu (22.04 or newer) server for clarigence.in, such as an Oracle Cloud Always Free instance.
 # deploy.sh (run at the end) installs the Nginx site and starts the containers.
-# Run as root:  bash setup-server.sh admin@yourdomain.com
+# Run as root:  sudo bash setup-server.sh admin@yourdomain.com
 # Safe to run again; existing passwords and data are kept.
 set -euo pipefail
 
@@ -15,7 +15,7 @@ export DEBIAN_FRONTEND=noninteractive
 
 echo "==> Installing system packages"
 apt-get update -y
-apt-get install -y ca-certificates curl git rsync nginx certbot python3-certbot-nginx ufw openssl
+apt-get install -y ca-certificates curl git rsync nginx certbot python3-certbot-nginx openssl
 
 if ! command -v docker >/dev/null 2>&1; then
   echo "==> Installing Docker"
@@ -34,9 +34,22 @@ if [ "$(node -p 'process.versions.node.split(".")[0]')" -lt 18 ]; then
 fi
 
 echo "==> Firewall: allow SSH, HTTP and HTTPS only"
-ufw allow OpenSSH
-ufw allow 'Nginx Full'
-ufw --force enable
+if [ -f /etc/iptables/rules.v4 ] && command -v netfilter-persistent >/dev/null 2>&1; then
+  # Oracle Cloud's Ubuntu images manage the firewall with saved iptables rules that reject web traffic,
+  # and installing ufw would conflict with them. Allow HTTP and HTTPS ahead of the final reject rule.
+  for port in 80 443; do
+    iptables -C INPUT -p tcp --dport "$port" -m conntrack --ctstate NEW -j ACCEPT 2>/dev/null       || iptables -I INPUT 1 -p tcp --dport "$port" -m conntrack --ctstate NEW -j ACCEPT
+    if [ -f /etc/iptables/rules.v6 ]; then
+      ip6tables -C INPUT -p tcp --dport "$port" -m conntrack --ctstate NEW -j ACCEPT 2>/dev/null         || ip6tables -I INPUT 1 -p tcp --dport "$port" -m conntrack --ctstate NEW -j ACCEPT
+    fi
+  done
+  netfilter-persistent save
+else
+  apt-get install -y ufw
+  ufw allow OpenSSH
+  ufw allow 'Nginx Full'
+  ufw --force enable
+fi
 
 echo "==> Fetching the website code"
 if [ -d "$APP_DIR/.git" ]; then

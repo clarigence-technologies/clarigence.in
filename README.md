@@ -1,12 +1,12 @@
 # Clarigence.in
 
-The public website runs on a Hostinger VPS. Nginx serves the static pages, and the
+The public website runs on an Oracle Cloud Always Free server (Ubuntu on ARM). Nginx serves the static pages, and the
 Java 25/Spring Boot backend in `backend/` runs with MySQL through Docker Compose. The
 backend provides site content, the admin panel and `/api/contact`. Every enquiry is
 saved in the admin inbox and, when email is enabled on the server, also sent to
 hello@clarigence.in.
 
-See [HOSTINGER-DEPLOYMENT.md](HOSTINGER-DEPLOYMENT.md) for server setup, email settings
+See [SERVER-DEPLOYMENT.md](SERVER-DEPLOYMENT.md) for server setup, email settings
 and operations. Vercel is no longer used in production, so `VERCEL-DEPLOYMENT.md` and
 `ENQUIRY-DEPLOYMENT.md` are historical.
 
